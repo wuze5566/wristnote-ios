@@ -1,0 +1,11 @@
+name: t
+on: [push, workflow_dispatch]
+jobs:
+  u:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo ubuntu-ok
+  w:
+    runs-on: windows-latest
+    steps:
+      - run: echo windows-ok
