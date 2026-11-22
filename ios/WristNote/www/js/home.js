@@ -203,7 +203,6 @@ window.Home = (function () {
           icon: 'edit', label: '重命名分类', onTap: function () {
             U.prompt({
               title: '重命名分类', value: cat.name, maxlength: 8, okText: '保存',
-              ,
               validate: function (v) {
                 if (!v) return '请输入名称';
                 if (Store.categoryNameExists(v, cat.id)) return '已有同名分类';

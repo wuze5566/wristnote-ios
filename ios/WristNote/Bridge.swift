@@ -115,7 +115,7 @@ final class HTTPStream: NSObject, URLSessionDataDelegate {
             bridge?.emitStream(id: id, event: "done", json: bridge?.jsonString(["status": status]) ?? "{}")
         }
         bridge?.removeStream(id: id)
-        session?.finishTasksAndInvalidate()
+        session.finishTasksAndInvalidate()
     }
 }
 
@@ -259,7 +259,12 @@ final class NativeBridge: NSObject, WKScriptMessageHandler, PHPickerViewControll
             startRecording(id: id, p: params)
 
         case "audio.stop":
-            stopRecording(id: id)
+            if recorder != nil {
+                stopRecording(id: id)
+            } else {
+                stopAudio(emit: true)
+                reply(id, ok: true, json: "{}")
+            }
 
         case "audio.cancel":
             cancelRecording(id: id)
@@ -282,10 +287,6 @@ final class NativeBridge: NSObject, WKScriptMessageHandler, PHPickerViewControll
 
         case "audio.resume":
             player?.play()
-            reply(id, ok: true, json: "{}")
-
-        case "audio.stop":
-            stopAudio(emit: true)
             reply(id, ok: true, json: "{}")
 
         case "audio.seek":
