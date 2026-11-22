@@ -164,7 +164,7 @@ window.App = (function () {
         Store.flush();
         Voice.onHide();
         Chat.onHide();
-      } else {
+      } else if (current === 'chat') {
         Chat.onShow();
       }
     });
