@@ -40,6 +40,9 @@ window.App = (function () {
     const prev = current ? viewEl(current) : null;
     const next = viewEl(name);
     if (prev) {
+      // 切换页面时收起键盘，避免输入框被藏起来后键盘还挂着
+      const ae = document.activeElement;
+      if (ae && ae !== document.body && prev.contains(ae) && ae.blur) ae.blur();
       prev.classList.remove('on');
       prev.classList.add('behind');
     }
@@ -61,6 +64,8 @@ window.App = (function () {
       return;
     }
     const prev = viewEl(prevName);
+    const ae = document.activeElement;
+    if (ae && ae !== document.body && ae.blur) ae.blur();
     onHide(current);
     if (cur) {
       cur.classList.remove('on');
@@ -81,6 +86,8 @@ window.App = (function () {
   }
 
   function reset(name) {
+    const ae0 = document.activeElement;
+    if (ae0 && ae0 !== document.body && ae0.blur) ae0.blur();
     Object.keys(VIEWS).forEach(function (k) {
       const el = viewEl(k);
       if (!el) return;

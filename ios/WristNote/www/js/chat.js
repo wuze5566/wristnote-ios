@@ -83,6 +83,14 @@ window.Chat = (function () {
       }
     }, { passive: true });
     list.addEventListener('touchend', function () { tracking = false; });
+
+    // 点消息区收起键盘
+    document.addEventListener('pointerdown', function (e) {
+      const input = $('#chInput');
+      if (document.activeElement !== input) return;
+      if (e.target.closest && (e.target.closest('.composer') || e.target.closest('.sheet') || e.target.closest('.modal'))) return;
+      input.blur();
+    }, true);
   }
 
   /* --------------------------------- 生命周期 --------------------------------- */
@@ -1194,6 +1202,8 @@ window.Chat = (function () {
 
   function closeDrawer() {
     state.drawerOpen = false;
+    const search = $('#chConvoSearch');
+    if (search && document.activeElement === search) search.blur();
     $('#chDrawerScrim').classList.remove('on');
     $('#chDrawer').classList.remove('on');
   }
