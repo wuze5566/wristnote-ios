@@ -1,4 +1,5 @@
 build/
 *.ipa
 *.app/
+_preview/
 .DS_Store

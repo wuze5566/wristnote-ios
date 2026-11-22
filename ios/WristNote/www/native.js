@@ -72,12 +72,23 @@
   /* ---------------- 桌面 mock ---------------- */
 
   const VFS_KEY = 'wristnote.vfs.';
+  const memVfs = {};
+  function lsGet(k) {
+    try { return localStorage.getItem(k); } catch (e) { return memVfs[k] === undefined ? null : memVfs[k]; }
+  }
+  function lsSet(k, v) {
+    try { localStorage.setItem(k, v); } catch (e) { memVfs[k] = v; }
+  }
+  function lsDel(k) {
+    try { localStorage.removeItem(k); } catch (e) { delete memVfs[k]; }
+  }
+  function lsKeys() {
+    try { return Object.keys(localStorage).filter(function (k) { return k.indexOf(VFS_KEY) === 0; }); }
+    catch (e) { return Object.keys(memVfs).filter(function (k) { return k.indexOf(VFS_KEY) === 0; }); }
+  }
   function vfsAll() {
     const out = {};
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (k && k.indexOf(VFS_KEY) === 0) out[k.slice(VFS_KEY.length)] = localStorage.getItem(k);
-    }
+    lsKeys().forEach(function (k) { out[k.slice(VFS_KEY.length)] = lsGet(k); });
     return out;
   }
 
@@ -96,9 +107,9 @@
         case 'fs': {
           const key = VFS_KEY + (p.path || '');
           switch (p.op) {
-            case 'write': localStorage.setItem(key, p.text == null ? '' : p.text); resolve({}); return;
+            case 'write': lsSet(key, p.text == null ? '' : p.text); resolve({}); return;
             case 'read': {
-              const v = localStorage.getItem(key);
+              const v = lsGet(key);
               if (v === null) reject(new Error('not found')); else resolve({ text: v });
               return;
             }
@@ -111,15 +122,15 @@
               resolve({ names: Array.from(new Set(names)).sort() });
               return;
             }
-            case 'delete': localStorage.removeItem(key); resolve({}); return;
-            case 'exists': resolve({ exists: localStorage.getItem(key) !== null }); return;
+            case 'delete': lsDel(key); resolve({}); return;
+            case 'exists': resolve({ exists: lsGet(key) !== null }); return;
             case 'bytes': {
-              const v = localStorage.getItem(key) || '';
+              const v = lsGet(key) || '';
               resolve({ base64: v.indexOf('data:') === 0 ? v.split(',')[1] : btoa(unescape(encodeURIComponent(v))) });
               return;
             }
-            case 'writeBytes': localStorage.setItem(key, 'data:application/octet-stream;base64,' + p.base64); resolve({}); return;
-            case 'size': resolve({ size: (localStorage.getItem(key) || '').length }); return;
+            case 'writeBytes': lsSet(key, 'data:application/octet-stream;base64,' + p.base64); resolve({}); return;
+            case 'size': resolve({ size: (lsGet(key) || '').length }); return;
             default: reject(new Error('unknown fs op')); return;
           }
         }

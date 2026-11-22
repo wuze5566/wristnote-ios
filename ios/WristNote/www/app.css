@@ -1,0 +1,198 @@
+/* WristNote iOS —— 白色圆润风格 */
+:root {
+  --bg: #FFFFFF;
+  --ink: #1E1E1E;
+  --muted: #8A8F98;
+  --line: #EDEFF2;
+  --card: #F7F8FA;
+  --accent: #2E7CF6;
+  --accent-weak: #EAF1FE;
+  --radius: 16px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0; padding: 0; height: 100%; overflow: hidden;
+  background: var(--bg); color: var(--ink);
+  font: 16px -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+
+body { overscroll-behavior: none; }
+button { font-family: inherit; border: 0; background: none; color: inherit; padding: 0; cursor: pointer; }
+input, textarea { font-family: inherit; color: inherit; }
+input:focus, textarea:focus { outline: none; }
+
+.view {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  background: var(--bg); visibility: hidden; opacity: 0;
+}
+.view.on { visibility: visible; opacity: 1; }
+
+/* ---------- 顶栏 ---------- */
+.hdr { padding: calc(var(--safe-top) + 10px) 16px 0; flex: none; }
+
+.hdr-top { display: flex; align-items: center; justify-content: space-between; height: 36px; }
+.hdr-top h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: .5px; }
+.hdr-actions { display: flex; gap: 8px; align-items: center; }
+
+.iconbtn {
+  width: 34px; height: 34px; border-radius: 12px; display: grid; place-items: center;
+  font-size: 16px; color: var(--ink); background: var(--card);
+}
+.iconbtn.on { background: var(--accent-weak); color: var(--accent); }
+
+.searchbar {
+  margin-top: 10px; height: 38px; border-radius: 19px; background: var(--card);
+  display: flex; align-items: center; padding: 0 14px; gap: 8px;
+}
+.searchbar svg { flex: none; opacity: .45; }
+.searchbar input {
+  flex: 1; border: 0; background: transparent; font-size: 14px; height: 100%;
+}
+.searchbar input::placeholder { color: #A8ADB5; }
+
+.chips { display: flex; gap: 8px; padding: 10px 16px 6px; overflow-x: auto; flex: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex: none; height: 28px; padding: 0 12px; border-radius: 14px;
+  background: var(--card); color: #5A6068; font-size: 12.5px; line-height: 28px;
+}
+.chip.on { background: var(--accent-weak); color: var(--accent); font-weight: 600; }
+
+/* ---------- 列表 ---------- */
+.list {
+  flex: 1; overflow-y: auto; padding: 4px 16px calc(96px + var(--safe-bottom));
+  -webkit-overflow-scrolling: touch;
+}
+.list::-webkit-scrollbar { display: none; }
+
+.date-hd { font-size: 11.5px; color: var(--muted); margin: 12px 2px 6px; }
+
+.note {
+  background: var(--card); border-radius: var(--radius); padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.note:active { background: #F0F2F5; }
+.note h3 {
+  margin: 0 0 4px; font-size: 15px; font-weight: 600; line-height: 1.35;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.note p {
+  margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.5;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  word-break: break-word;
+}
+.note .meta { margin-top: 6px; font-size: 11px; color: #A8ADB5; display: flex; gap: 8px; align-items: center; }
+.dot { width: 6px; height: 6px; border-radius: 3px; display: inline-block; }
+.hit { background: #FFF0B3; border-radius: 3px; }
+
+.empty { text-align: center; color: var(--muted); font-size: 13px; padding: 48px 0; }
+
+/* ---------- 悬浮钮 ---------- */
+.floating { position: absolute; right: 16px; bottom: calc(20px + var(--safe-bottom)); display: flex; flex-direction: column; gap: 12px; }
+.rbtn {
+  width: 52px; height: 52px; border-radius: 26px; display: grid; place-items: center;
+  font-size: 22px; background: var(--accent); color: #fff;
+  box-shadow: 0 6px 18px rgba(46, 124, 246, .28);
+}
+.rbtn.ghost { background: #fff; color: var(--accent); border: 1.5px solid var(--accent-weak); box-shadow: 0 4px 14px rgba(0,0,0,.06); }
+
+/* ---------- 编辑器 ---------- */
+.ed-hdr { padding: calc(var(--safe-top) + 8px) 12px 6px; display: flex; align-items: center; gap: 8px; flex: none; }
+.ed-title {
+  flex: 1; border: 0; font-size: 18px; font-weight: 700; background: transparent;
+  padding: 6px 4px;
+}
+.ed-status { font-size: 11px; color: var(--muted); flex: none; }
+
+.ed-body {
+  flex: 1; overflow-y: auto; padding: 4px 18px 12px; font-size: 16px; line-height: 1.7;
+  -webkit-overflow-scrolling: touch; word-break: break-word; outline: none;
+}
+.ed-body:empty:before { content: attr(data-ph); color: #B9BEC6; }
+.ed-body img { max-width: 100%; border-radius: 10px; margin: 6px 0; display: block; }
+.ed-body audio { width: 100%; margin: 6px 0; }
+.ed-body b, .ed-body strong { font-weight: 700; }
+
+.toolbar {
+  flex: none; display: flex; gap: 6px; padding: 8px 12px calc(8px + var(--safe-bottom));
+  border-top: 1px solid var(--line); background: #fff; overflow-x: auto;
+}
+.toolbar::-webkit-scrollbar { display: none; }
+.tool {
+  flex: none; width: 38px; height: 34px; border-radius: 10px; background: var(--card);
+  display: grid; place-items: center; font-size: 14px; font-weight: 700; color: #4A4F57;
+}
+.tool.on { background: var(--accent-weak); color: var(--accent); }
+.tool.wide { width: auto; padding: 0 12px; font-weight: 600; font-size: 13px; }
+
+/* ---------- 通用设置列表 ---------- */
+.page { flex: 1; overflow-y: auto; padding: 8px 16px calc(28px + var(--safe-bottom)); }
+.page::-webkit-scrollbar { display: none; }
+.sec { margin-top: 18px; }
+.sec:first-child { margin-top: 4px; }
+.sec h2 { font-size: 12px; color: var(--muted); font-weight: 500; margin: 0 0 8px 4px; }
+.rows { background: var(--card); border-radius: var(--radius); overflow: hidden; }
+.row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 13px 14px; font-size: 14.5px; min-height: 48px;
+}
+.row + .row { border-top: 1px solid rgba(0,0,0,.045); }
+.row:active { background: #F0F2F5; }
+.row .v { color: var(--muted); font-size: 13px; text-align: right; }
+.row.danger { color: #E5484D; }
+
+/* ---------- 面板 / 弹层 ---------- */
+.mask {
+  position: absolute; inset: 0; background: rgba(0,0,0,.28); visibility: hidden; opacity: 0;
+  transition: opacity .16s ease; z-index: 40;
+}
+.mask.on { visibility: visible; opacity: 1; }
+.sheet {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 41;
+  background: #fff; border-radius: 22px 22px 0 0; padding: 16px 16px calc(18px + var(--safe-bottom));
+  transform: translateY(102%); transition: transform .22s cubic-bezier(.3,.9,.3,1);
+  max-height: 72%; overflow-y: auto;
+}
+.sheet.on { transform: translateY(0); }
+.sheet h3 { margin: 2px 0 12px; font-size: 15px; }
+.sheet .opt { padding: 14px 6px; font-size: 15px; border-bottom: 1px solid var(--line); }
+.sheet .opt:last-child { border-bottom: 0; }
+.sheet .opt.danger { color: #E5484D; }
+
+.swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin: 6px 0 4px; }
+.sw { height: 34px; border-radius: 10px; border: 1px solid rgba(0,0,0,.07); }
+.sw.on { box-shadow: 0 0 0 2px var(--accent); }
+
+.hexrow { display: flex; gap: 8px; margin-top: 12px; }
+.hexrow input { flex: 1; height: 40px; border-radius: 10px; background: var(--card); border: 0; padding: 0 12px; font-size: 14px; }
+.btn-primary { background: var(--accent); color: #fff; border-radius: 12px; padding: 0 18px; height: 40px; font-weight: 600; }
+
+.toast {
+  position: absolute; left: 50%; bottom: calc(96px + var(--safe-bottom)); transform: translateX(-50%) translateY(8px);
+  background: rgba(30,30,30,.88); color: #fff; font-size: 13px; padding: 9px 16px; border-radius: 20px;
+  opacity: 0; transition: opacity .18s, transform .18s; pointer-events: none; z-index: 60; max-width: 80%;
+}
+.toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---------- 深色 ---------- */
+body.dark {
+  --bg: #121316;
+  --ink: #EDEFF2;
+  --muted: #8A8F98;
+  --line: #24262B;
+  --card: #1B1D22;
+  --accent: #4C8DF7;
+  --accent-weak: #1B2A44;
+}
+body.dark .toolbar { background: #121316; }
+body.dark .rbtn.ghost { background: #1B1D22; border-color: #24314A; }
+body.dark .sheet { background: #17191D; }
+body.dark .searchbar input::placeholder { color: #6A707A; }
+body.dark .note:active, body.dark .row:active { background: #24262B; }
+body.dark .hit { background: #7A6410; color: #fff; }
+body.dark .ed-body:empty:before { color: #5A6068; }
