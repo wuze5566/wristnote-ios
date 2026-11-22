@@ -1,11 +1,11 @@
 name: t
 on: [push, workflow_dispatch]
 jobs:
-  u:
-    runs-on: ubuntu-latest
+  m15:
+    runs-on: macos-15
     steps:
-      - run: echo ubuntu-ok
-  w:
-    runs-on: windows-latest
+      - run: echo macos15-ok && xcodebuild -version
+  mlatest:
+    runs-on: macos-latest
     steps:
-      - run: echo windows-ok
+      - run: echo maclatest-ok && uname -a
