@@ -7,168 +7,45 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="format-detection" content="telephone=no">
 <meta name="theme-color" content="#FFFFFF">
-<title>备忘录</title>
+<title>对话</title>
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
 
-<!-- ======================= 图标 ======================= -->
 <svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
   <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 3.5a3 3 0 0 1 3 3v5a3 3 0 0 1-6 0v-5a3 3 0 0 1 3-3Z"/><path d="M6 11v.6a6 6 0 0 0 12 0V11M12 18v3"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
   <symbol id="i-chat" viewBox="0 0 24 24"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H8l-4 3v-6.2A7.5 7.5 0 0 1 8.5 4h4A7.5 7.5 0 0 1 20 11.5Z"/></symbol>
-  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></symbol>
-  <symbol id="i-back" viewBox="0 0 24 24"><path d="M14.5 5.5 8 12l6.5 6.5"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M4 6.5h16M4 12h16M4 17.5h10"/></symbol>
   <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.4" fill="currentColor" stroke="none"/></symbol>
-  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3.8 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 10l5.9-.9L12 3.8Z"/></symbol>
-  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="m4.5 17 4.8-4.6 4 3.7 2.4-2.2 4.3 4"/></symbol>
-  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 7h15M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7M6.5 7l.8 11.2A2 2 0 0 0 9.3 20h5.4a2 2 0 0 0 2-1.8L17.5 7"/><path d="M10.5 11v5M13.5 11v5"/></symbol>
-  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M11.6 3.9H19a1.1 1.1 0 0 1 1.1 1.1v7.4a1.6 1.6 0 0 1-.47 1.13l-6.2 6.2a1.6 1.6 0 0 1-2.26 0l-5.6-5.6a1.6 1.6 0 0 1 0-2.26l6.2-6.2a1.6 1.6 0 0 1 1.13-.47Z"/><circle cx="16.2" cy="7.8" r="1.2" fill="currentColor" stroke="none"/></symbol>
-  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3.5 7.4c0-1 .8-1.9 1.9-1.9h3.2l2 2.4h8a1.9 1.9 0 0 1 1.9 1.9v7.8a1.9 1.9 0 0 1-1.9 1.9H5.4a1.9 1.9 0 0 1-1.9-1.9V7.4Z"/></symbol>
-  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="11" height="11" rx="2.2"/><path d="M15.5 5.6A1.6 1.6 0 0 0 14 4.5H6.2A1.7 1.7 0 0 0 4.5 6.2V14a1.6 1.6 0 0 0 1.1 1.5"/></symbol>
-  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V4.2M8.4 7.6 12 4l3.6 3.6"/><path d="M5.5 12.5v5.4a1.6 1.6 0 0 0 1.6 1.6h9.8a1.6 1.6 0 0 0 1.6-1.6v-5.4"/></symbol>
-  <symbol id="i-archive" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="4" rx="1.2"/><path d="M5.2 8.5v9.3a1.7 1.7 0 0 0 1.7 1.7h10.2a1.7 1.7 0 0 0 1.7-1.7V8.5M10 12.5h4"/></symbol>
-  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M9 3.8h6l-.7 4.1 3 3.2-1.1 1.1-3.2-1v5.6l-1.9 3.4-1.9-3.4v-5.6l-3.2 1L5.4 11l3-3.2-.7-4.1Z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></symbol>
   <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.6 4.6L19 7.2"/></symbol>
   <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4.5 19.5h3.2L19 8.2a1.8 1.8 0 0 0 0-2.5l-.7-.7a1.8 1.8 0 0 0-2.5 0L4.5 16.3v3.2Z"/></symbol>
-  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.6 18 12 8 18.4V5.6Z" fill="currentColor" stroke="none"/></symbol>
-  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="7.5" y="5.5" width="3.2" height="13" rx="1.2" fill="currentColor" stroke="none"/><rect x="13.3" y="5.5" width="3.2" height="13" rx="1.2" fill="currentColor" stroke="none"/></symbol>
-  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="2.4" fill="currentColor" stroke="none"/></symbol>
-  <symbol id="i-send" viewBox="0 0 24 24"><path d="M4.2 11.4 19.6 5.1a.6.6 0 0 1 .8.8l-6.3 15.4a.6.6 0 0 1-1.1 0l-2.5-5.9-5.9-2.5a.6.6 0 0 1 0-1.1Z"/></symbol>
-  <symbol id="i-attach" viewBox="0 0 24 24"><path d="M18.5 11.2 12 17.7a4.2 4.2 0 0 1-6-6l7.1-7.1a2.8 2.8 0 0 1 4 4l-7 7a1.4 1.4 0 0 1-2-2l6.2-6.2"/></symbol>
-  <symbol id="i-sort" viewBox="0 0 24 24"><path d="M7 4.5v15M4 16.5l3 3 3-3M17 19.5v-15M14 7.5l3-3 3 3"/></symbol>
-  <symbol id="i-restore" viewBox="0 0 24 24"><path d="M4.2 10.5A7.8 7.8 0 1 1 5 16"/><path d="M4 5.2v5.3h5.3"/></symbol>
-  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.9" r="1.1" fill="currentColor" stroke="none"/></symbol>
-  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3.6v2.2M12 18.2v2.2M4.5 12H2.6M21.4 12h-1.9M6.7 6.7 5.3 5.3M18.7 18.7l-1.4-1.4M17.3 6.7l1.4-1.4M5.3 18.7l1.4-1.4"/></symbol>
-  <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3.8a8.2 8.2 0 0 0 0 16.4c1.3 0 1.9-.9 1.9-1.8 0-1.5 1-2.1 2.3-2.1h1.4a2.6 2.6 0 0 0 2.6-2.6c0-5.5-3.7-9.9-8.2-9.9Z"/><circle cx="8.2" cy="10.2" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="7.6" r="1.1" fill="currentColor" stroke="none"/><circle cx="15.8" cy="9.6" r="1.1" fill="currentColor" stroke="none"/></symbol>
-  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9.5 5.5 6.5 6.5-6.5 6.5"/></symbol>
-  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3.5 13.9 9l5.6 2-5.6 2-1.9 5.5L10 13 4.4 11 10 9l2-5.5Z"/><path d="M18.6 16.2 19.4 18l1.8.8-1.8.8-.8 1.8-.8-1.8-1.8-.8 1.8-.8.8-1.8Z" fill="currentColor" stroke="none"/></symbol>
-  <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="3" y="6.5" width="18" height="11" rx="2.4"/><path d="M7 10h.01M10.4 10h.01M13.8 10h.01M17.2 10h.01M7.6 13.6h8.8"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="m4.5 17 4.8-4.6 4 3.7 2.4-2.2 4.3 4"/></symbol>
   <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6.5 3.8h7.2l4 4v12.4a1.6 1.6 0 0 1-1.6 1.6H6.5a1.6 1.6 0 0 1-1.6-1.6V5.4a1.6 1.6 0 0 1 1.6-1.6Z"/><path d="M13.4 3.9v4.1h4.1M8.2 12.5h7M8.2 16h4.8"/></symbol>
+  <symbol id="i-attach" viewBox="0 0 24 24"><path d="M18.5 11.2 12 17.7a4.2 4.2 0 0 1-6-6l7.1-7.1a2.8 2.8 0 0 1 4 4l-7 7a1.4 1.4 0 0 1-2-2l6.2-6.2"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M4.2 11.4 19.6 5.1a.6.6 0 0 1 .8.8l-6.3 15.4a.6.6 0 0 1-1.1 0l-2.5-5.9-5.9-2.5a.6.6 0 0 1 0-1.1Z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M9 3.8h6l-.7 4.1 3 3.2-1.1 1.1-3.2-1v5.6l-1.9 3.4-1.9-3.4v-5.6l-3.2 1L5.4 11l3-3.2-.7-4.1Z"/></symbol>
+  <symbol id="i-archive" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="4" rx="1.2"/><path d="M5.2 8.5v9.3a1.7 1.7 0 0 0 1.7 1.7h10.2a1.7 1.7 0 0 0 1.7-1.7V8.5M10 12.5h4"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3.6v2.2M12 18.2v2.2M4.5 12H2.6M21.4 12h-1.9M6.7 6.7 5.3 5.3M18.7 18.7l-1.4-1.4M17.3 6.7l1.4-1.4M5.3 18.7l1.4-1.4"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 7h15M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7M6.5 7l.8 11.2A2 2 0 0 0 9.3 20h5.4a2 2 0 0 0 2-1.8L17.5 7"/><path d="M10.5 11v5M13.5 11v5"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="11" height="11" rx="2.2"/><path d="M15.5 5.6A1.6 1.6 0 0 0 14 4.5H6.2A1.7 1.7 0 0 0 4.5 6.2V14a1.6 1.6 0 0 0 1.1 1.5"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3.5 13.9 9l5.6 2-5.6 2-1.9 5.5L10 13 4.4 11 10 9l2-5.5Z"/><path d="M18.6 16.2 19.4 18l1.8.8-1.8.8-.8 1.8-.8-1.8-1.8-.8 1.8-.8.8-1.8Z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M14.5 5.5 8 12l6.5 6.5"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9.5 5.5 6.5 6.5-6.5 6.5"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.9" r="1.1" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15.5" r="3.5"/><path d="m10.6 13 8.2-8.2M15.3 8.3l2 2M17.6 6l2 2"/></symbol>
+  <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3.8a8.2 8.2 0 0 0 0 16.4c1.3 0 1.9-.9 1.9-1.8 0-1.5 1-2.1 2.3-2.1h1.4a2.6 2.6 0 0 0 2.6-2.6c0-5.5-3.7-9.9-8.2-9.9Z"/><circle cx="8.2" cy="10.2" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="7.6" r="1.1" fill="currentColor" stroke="none"/><circle cx="15.8" cy="9.6" r="1.1" fill="currentColor" stroke="none"/></symbol>
 </svg>
 
 <div id="app">
 
-  <!-- ======================= 首页 ======================= -->
-  <section class="view view-home" id="v-home">
-    <header class="home-hdr">
-      <div class="home-top">
-        <div class="home-title-wrap">
-          <h1 class="home-title">备忘</h1>
-          <span class="home-count" id="homeCount"></span>
-        </div>
-        <div class="home-actions">
-          <button class="ibtn" id="homeVoice" aria-label="语音备忘"><svg class="ico"><use href="#i-mic"/></svg></button>
-          <button class="ibtn" id="homeMore" aria-label="更多"><svg class="ico"><use href="#i-more"/></svg></button>
-        </div>
-      </div>
-      <div class="searchbar" id="homeSearchBar">
-        <svg class="ico search-ico"><use href="#i-search"/></svg>
-        <input id="homeSearch" type="search" placeholder="搜索内容" autocomplete="off" autocorrect="off" spellcheck="false">
-        <button class="search-clear" id="homeSearchClear" aria-label="清空搜索"><svg class="ico"><use href="#i-close"/></svg></button>
-      </div>
-    </header>
-    <div class="chips" id="homeChips"></div>
-    <div class="filter-row" id="homeFilterRow"><button class="filter-chip" id="homeFilter"></button></div>
-    <div class="scroll list" id="homeList"></div>
-    <div class="fab-stack">
-      <button class="fab fab-ghost" id="homeChat" aria-label="打开对话"><svg class="ico"><use href="#i-chat"/></svg></button>
-      <button class="fab fab-main" id="homeAdd" aria-label="新建备忘"><svg class="ico"><use href="#i-plus"/></svg></button>
-    </div>
-  </section>
-
-  <!-- ======================= 编辑器 ======================= -->
-  <section class="view view-editor" id="v-editor">
-    <header class="nav">
-      <div class="nav-row">
-        <button class="ibtn nav-back" id="edBack" aria-label="返回"><svg class="ico"><use href="#i-back"/></svg></button>
-        <span class="nav-title" id="edNavTitle">备忘</span>
-        <div class="nav-actions">
-          <button class="ibtn" id="edStar" aria-label="星标"><svg class="ico"><use href="#i-star"/></svg></button>
-          <button class="ibtn" id="edMore" aria-label="更多"><svg class="ico"><use href="#i-more"/></svg></button>
-          <button class="pill" id="edDone">完成</button>
-        </div>
-      </div>
-      <div class="meta-row">
-        <button class="tag-select" id="edCat">未分类</button>
-        <div class="tag-scroll" id="edTags"></div>
-        <span class="save-state" id="edSaveState">已保存</span>
-      </div>
-    </header>
-    <div class="ed-scroll">
-      <div class="page-card" id="edPage">
-        <input id="edTitle" class="ed-title" placeholder="标题" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="80">
-        <div class="ed-divider"></div>
-        <div id="edBody" class="ed-body" contenteditable="true" data-ph="开始记录…" spellcheck="false"></div>
-      </div>
-    </div>
-    <div class="toolbar" id="edToolbar">
-      <button class="tool" id="tColor" aria-label="字色"><span class="a-letter">A</span><span class="a-line" id="tColorLine"></span></button>
-      <button class="tool t-bold" id="tBold" aria-label="加粗">B</button>
-      <button class="tool" id="tTodo" aria-label="待办"><span class="todo-glyph">□</span></button>
-      <button class="tool" id="tImage" aria-label="插入图片"><svg class="ico"><use href="#i-image"/></svg></button>
-      <button class="tool" id="tMic" aria-label="录制语音"><svg class="ico"><use href="#i-mic"/></svg></button>
-      <span class="toolbar-gap"></span>
-      <button class="tool tool-text" id="tMore" aria-label="更多">⋯</button>
-    </div>
-  </section>
-
-  <!-- ======================= 设置（目录） ======================= -->
-  <section class="view" id="v-settings">
-    <header class="nav">
-      <div class="nav-row">
-        <button class="ibtn nav-back" id="stBack" aria-label="返回"><svg class="ico"><use href="#i-back"/></svg></button>
-        <span class="nav-title">设置</span>
-        <div class="nav-actions"><span class="nav-spacer"></span></div>
-      </div>
-    </header>
-    <div class="scroll page" id="stList"></div>
-  </section>
-
-  <!-- ======================= 设置（二级页） ======================= -->
-  <section class="view" id="v-settings-page">
-    <header class="nav">
-      <div class="nav-row">
-        <button class="ibtn nav-back" id="spBack" aria-label="返回"><svg class="ico"><use href="#i-back"/></svg></button>
-        <span class="nav-title" id="spTitle">设置</span>
-        <div class="nav-actions"><span class="nav-spacer"></span></div>
-      </div>
-    </header>
-    <div class="scroll page" id="spBody"></div>
-  </section>
-
-  <!-- ======================= 回收站 ======================= -->
-  <section class="view" id="v-trash">
-    <header class="nav">
-      <div class="nav-row">
-        <button class="ibtn nav-back" id="trBack" aria-label="返回"><svg class="ico"><use href="#i-back"/></svg></button>
-        <span class="nav-title">回收站</span>
-        <div class="nav-actions"><button class="pill pill-ghost" id="trClear">清空</button></div>
-      </div>
-    </header>
-    <div class="scroll page" id="trList"></div>
-  </section>
-
-  <!-- ======================= 语音备忘 ======================= -->
-  <section class="view" id="v-voice">
-    <header class="nav">
-      <div class="nav-row">
-        <button class="ibtn nav-back" id="voBack" aria-label="返回"><svg class="ico"><use href="#i-back"/></svg></button>
-        <span class="nav-title">语音备忘</span>
-        <div class="nav-actions"><button class="ibtn" id="voNewFolder" aria-label="新建文件夹"><svg class="ico"><use href="#i-folder"/></svg></button></div>
-      </div>
-      <div class="chips chips-tight" id="voFolders"></div>
-    </header>
-    <div class="scroll page" id="voList"></div>
-    <button class="fab fab-main" id="voRecord" aria-label="录音"><svg class="ico"><use href="#i-mic"/></svg></button>
-  </section>
-
-  <!-- ======================= 对话 ======================= -->
+  <!-- ======================= 对话（首页） ======================= -->
   <section class="view view-chat" id="v-chat">
     <header class="chat-hdr">
       <div class="nav-row chat-nav">
-        <button class="ibtn nav-back" id="chBack" aria-label="返回"><svg class="ico"><use href="#i-back"/></svg></button>
+        <button class="ibtn" id="chHistory" aria-label="历史对话"><svg class="ico"><use href="#i-list"/></svg></button>
         <span class="nav-title" id="chTitle">对话</span>
         <div class="nav-actions">
           <button class="ibtn" id="chMore" aria-label="更多"><svg class="ico"><use href="#i-more"/></svg></button>
@@ -217,8 +94,21 @@
       <div class="drawer-foot">
         <button class="drawer-archive-toggle" id="chArchivedToggle"></button>
         <button class="drawer-new" id="chDrawerNew">＋ 新对话</button>
+        <button class="drawer-new" id="chDrawerSettings" style="color:var(--sub)">设置</button>
       </div>
     </aside>
+  </section>
+
+  <!-- ======================= 设置 ======================= -->
+  <section class="view" id="v-settings">
+    <header class="nav">
+      <div class="nav-row">
+        <button class="ibtn nav-back" id="setBack" aria-label="返回"><svg class="ico"><use href="#i-back"/></svg></button>
+        <span class="nav-title">设置</span>
+        <div class="nav-actions"><span class="nav-spacer"></span></div>
+      </div>
+    </header>
+    <div class="scroll page" id="setList"></div>
   </section>
 
 </div>
@@ -248,11 +138,7 @@
 <script src="js/store.js"></script>
 <script src="js/md.js"></script>
 <script src="js/api.js"></script>
-<script src="js/home.js"></script>
-<script src="js/editor.js"></script>
 <script src="js/settings.js"></script>
-<script src="js/trash.js"></script>
-<script src="js/voice.js"></script>
 <script src="js/chat.js"></script>
 <script src="js/app.js"></script>
 </body>

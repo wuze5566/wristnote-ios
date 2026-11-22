@@ -1,105 +1,85 @@
-# 手表备忘录 iOS 版（全功能移植）
+# DeepSeek 对话 · iOS
 
-把安卓手表端的 **手表备忘录 / com.wristnote.app v0.7.9** 完整移植到 iPhone。
-功能按安卓源码逐个对照实现，界面按 iPhone 屏幕重新排版（安全区、键盘、深色模式），数据从空白开始，不做迁移。
+一个只做聊天的 iPhone 应用：DeepSeek 官方接口、流式输出、思考过程、多段历史对话、图片/语音/文件附件。
+备忘录功能不需要——苹果自带备忘录就够了，这个 App 专心做对话。
 
 ## 成品
 
-- 构建产物：`WristNote.ipa`（GitHub Actions 自动构建，未签名，交给全能签签）
+- 构建产物：`WristNote.ipa`（GitHub Actions macOS 自动构建，未签名，交给全能签）
 - 包名：`com.wristnote.app`
-- 版本：`1.0.0`（`CFBundleVersion 1`）
+- 显示名：DeepSeek 对话
+- 版本：1.0.0（CFBundleVersion 1）
 - 最低系统：iOS 15.0，arm64
-- 显示名：手表备忘录
+
+## 功能
+
+### 对话
+
+- 流式输出（SSE），边生成边显示
+- 思考过程折叠：回复上方 `▸ 思考过程`，展开看 `reasoning_content`
+- Markdown 渲染：标题、列表、表格、代码块、行内代码、粗体/斜体/删除线、引用、链接只留文字、LaTeX 括号还原
+- 推理强度：`off / low / high / max`；off 只发 `thinking:disabled`，不发 `reasoning_effort`
+- 模型：`deepseek-flash` / `deepseek-chat` / `deepseek-reasoner` / 自定义
+- 两种模式：普通（纯模型）、大肥鱼（人设）
+- 余额、上下文圆环、缓存命中率
+- 长按消息：复制 / 重改 / 删除；AI 回复可重新生成
+- 发送中可点停止
+
+### 附件
+
+- 图片：相册选择，自动压到 1600px，base64 走视觉输入
+- 语音：录音 → 停止 → 调 ASR 转文字 → 和消息一起发送
+- 本机文件：文件 App 选择，走 Files API 上传后以 `file_id` 发送
+
+### 历史对话
+
+- 左滑消息区（或左上角列表按钮）打开抽屉
+- 搜索标题和对话正文
+- 置顶 / 今天 / 昨天 / 7 天内 / 更早 分组
+- 每行：⋯ 菜单、归档、置顶；已归档（N）切换
+- 重命名、删除、清空当前对话
+
+### 设置
+
+- 模型、推理强度、账户余额、API Key、接口地址
+- 外观：跟随系统 / 浅色 / 深色
+- 诊断日志开关与查看（复制 / 清空，崩溃记录置顶）
+- 版本号、联系我
 
 ## 技术结构
 
 | 层 | 说明 |
 | --- | --- |
-| `ios/WristNote/*.swift` | 原生壳：WKWebView、安全区/键盘、原生桥、录音与播放、相册、文件、SSE 流式 HTTP、诊断日志 |
-| `ios/WristNote/www/` | 界面与业务：HTML/CSS/JS，视图栈、编辑器、语音备忘、对话、设置 |
-| `build.sh` | 用 `swiftc` 直接编 arm64 可执行文件，手工拼 `.app`，打 `Payload/` 成 IPA |
+| `ios/WristNote/*.swift` | WKWebView 壳、安全区/键盘、原生桥、录音、相册、文件、SSE 流式 HTTP、日志 |
+| `ios/WristNote/www/` | 界面与业务：HTML/CSS/JS（对话、抽屉、设置、Markdown） |
+| `build.sh` | `swiftc` 编 arm64，拼 `.app`，打包成 IPA |
 | `.github/workflows/ipa.yml` | macOS runner 自动构建并上传 IPA |
-
-没有用 Xcode 工程，也没有第三方依赖；CI 只需要 Xcode 命令行工具。
-
-## 功能对照
-
-### 备忘
-
-- 首页：搜索（标题/正文/标签，命中高亮 + 正文片段）、分类横条、按天分组、星标、标签、条数
-- 长按备忘：打开 / 星标 / 标签 / 移动分类 / 复制全文 / 分享 / 删除
-- 长按分类：重命名 / 删除；分类名最多 8 字、重名拦截
-- 排序：最近修改 / 最近创建 / 标题顺序；只看星标；按标签筛选
-- 回收站：恢复 / 彻底删除 / 清空
-
-### 编辑器
-
-- 标题 + 富文本正文（HTML 存储），输入即存或保存键保存
-- 字色 / 高亮（可开 16 进制输入）、加粗、待办（点行首 □/■ 切换并划掉）
-- 插入图片（相册，自动压到 1600px）/ 内置 6 张贴纸
-- 插入语音：分段录制、按设置秒数自动落盘、崩溃后自动恢复
-- 分类、标签、星标、字数与更新时间、复制、分享、删除
-- 纸张背景：默认 / 纯色 / 图片；正文字号 8–72 px；自动键盘、收起键盘隐藏光标
-
-### 语音备忘
-
-- 录音（分段自动保存 + `recording.part` 崩溃恢复）
-- 播放进度、倍速 1× / 1.5× / 2×、点击进度条跳转
-- 文件夹：新建 / 重命名 / 删除 / 移动
-- 重命名、删除
-- 转文字：多段 WAV 原生合并 → `/v1/tools/asr` → 结果可复制或存为备忘
-
-### 对话（DeepSeek）
-
-- 三种模式：普通 / 备忘助手（7 个本地工具）/ 大肥鱼（人设）
-- 模型、推理强度（off / low / high / max，off 只发 `thinking:disabled`）
-- SSE 流式输出、思考过程折叠、Markdown 渲染（标题/列表/表格/代码/删除线/链接留文字/LaTeX 括号还原）
-- 余额、上下文圆环、缓存命中率
-- 附件：图片（base64 视觉）、录音（转写后发送）、本机文件（Files API 上传）
-- 长按消息：复制 / 重改 / 删除
-- 历史抽屉：搜索正文、置顶/今天/昨天/7 天/更早分组、置顶、归档、重命名、删除、已归档切换
-- 工具调用循环最多 5 轮，失败如实返回
-
-### 设置
-
-- 基础：外观（跟随系统 / 浅色 / 深色）、字号大小、版本号
-- 个性化：16 进制字色、备忘录背景
-- 偏好：自动键盘、隐藏光标、保存方式、录音自动保存间隔（3/5/10/15 秒）
-- 语音与识别：API Key、模型、账户余额、接口地址
-- 其他：版本号、联系我（复制邮箱）、诊断日志开关、诊断日志（复制/清空/刷新，崩溃记录置顶）
 
 ## 构建
 
-推送到 `main` 会自动跑 GitHub Actions，产物在 Actions 的 `WristNote-ipa` artifact 里（zip 内含 `WristNote.ipa`）。
-
-本地（macOS）也可以：
-
-```bash
-bash build.sh
-```
+推送 `main` 自动构建，产物在 Actions 的 `WristNote-ipa` artifact（zip 里是 `WristNote.ipa`）。
+本地 macOS 也可以 `bash build.sh`。
 
 ## 安装（全能签）
 
 1. 下载 `WristNote.ipa`
-2. 全能签 → 导入 IPA → 选择证书签名（包名保持 `com.wristnote.app` 即可）
-3. 安装后首次录音会弹麦克风权限
+2. 全能签 → 导入 → 选证书签名（包名保持 `com.wristnote.app`，或按证书改）
+3. 首次录音会要麦克风权限；第一次发消息前先去「设置」填 API Key
 
 ## 数据
 
-应用私有目录（Files → 我的 iPhone → 手表备忘录 可见，需在 Info.plist 里开了文件共享）：
-
 | 内容 | 位置 |
 | --- | --- |
-| 数据库 | `data/db.json` |
+| 设置 | `data/db.json` |
 | 对话 | `data/chats/<id>.json` |
-| 图片 | `images/*.jpg` |
-| 语音 | `audio/*.wav`（多段用 `|` 连接） |
-| 聊天附件 | `files/*` |
-| 诊断日志 | `diagnose.log`、`crash.txt` |
+| 图片/文件 | `images/*.jpg`、`files/*` |
+| 语音 | `audio/*.wav` |
+| 日志 | `diagnose.log`、`crash.txt` |
 
-## 与安卓版的差异
+应用开了文件共享，可在 Files → 我的 iPhone → DeepSeek 对话 里看到并备份。
 
-- 数据不迁移：iPhone 从空白开始（用户要求）
-- 界面按 iPhone 390×844 重排，不再是 349×427 手表布局；保留白色圆润 + 蓝色强调的设计语言
-- 安卓的 `versionCode/versionName` 换成 iOS 的 `CFBundleVersion/CFBundleShortVersionString`，当前 1.0.0
-- 依赖安卓系统能力的部分换成 iOS 原生实现：SAF → 文件 App、MediaMetadataRetriever → 墙钟计时、Toast → 自绘提示
+## 说明
+
+- 没有做备忘录/编辑器/语音备忘/回收站：需求改成只做聊天，苹果自带备忘录
+- 版本号从安卓的 0.7.9 改成 iOS 的 1.0.0
+- 数据从空白开始，不迁移

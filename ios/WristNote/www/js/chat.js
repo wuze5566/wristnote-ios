@@ -1,18 +1,10 @@
-/* 对话：三种模式、流式输出、工具调用、附件、历史抽屉、Markdown 与思考过程 */
+/* 对话：流式输出、模式/模型/强度、附件、历史抽屉、Markdown、思考过程 */
 window.Chat = (function () {
   const $ = U.$;
 
   const MODES = [
-    { id: 0, name: '普通', short: '普通', desc: '纯 DeepSeek V4.1 Flash，不加人设' },
-    { id: 1, name: '备忘助手', short: '助手', desc: '读写备忘录、修改应用设置，不再限制字数' },
-    { id: 2, name: '大肥鱼', short: '肥鱼', desc: '大肥鱼人设，短句傲娇，不接工具' }
-  ];
-
-  const EFFORTS = [
-    { id: 'off', label: '关闭思考（off）', desc: '只发 thinking:disabled，不发送推理强度' },
-    { id: 'low', label: '低（low）', desc: '省 token，简单问答够用' },
-    { id: 'high', label: '高（high）', desc: '官方默认，适合大多数问题' },
-    { id: 'max', label: '最高（max）', desc: '复杂推理，慢但更稳' }
+    { id: 0, name: '普通', short: '普通' },
+    { id: 2, name: '大肥鱼', short: '肥鱼' }
   ];
 
   const state = {
@@ -28,12 +20,10 @@ window.Chat = (function () {
     pendingIndex: -1
   };
 
-  const snap = { listEl: null };
-
   /* --------------------------------- 初始化 --------------------------------- */
 
   function init() {
-    $('#chBack').addEventListener('click', function () { App.back('home'); });
+    $('#chHistory').addEventListener('click', openDrawer);
     $('#chNew').addEventListener('click', function () { newChat(); });
     $('#chMore').addEventListener('click', showMore);
     $('#chMode').addEventListener('click', pickMode);
@@ -45,6 +35,7 @@ window.Chat = (function () {
     $('#chDrawerClose').addEventListener('click', closeDrawer);
     $('#chDrawerScrim').addEventListener('click', closeDrawer);
     $('#chDrawerNew').addEventListener('click', function () { newChat(); closeDrawer(); });
+    $('#chDrawerSettings').addEventListener('click', function () { closeDrawer(); App.show('settings'); });
     $('#chConvoSearch').addEventListener('input', function () {
       state.convoQuery = this.value;
       renderDrawer();
@@ -53,10 +44,11 @@ window.Chat = (function () {
       state.archivedView = !state.archivedView;
       renderDrawer();
     });
+
     const input = $('#chInput');
     input.addEventListener('input', function () {
       autoGrow(input);
-      $('#chSend').disabled = !input.value.trim() && !state.pendingAtts.length && !state.sending;
+      ensureChatButtonState();
     });
     input.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
@@ -64,7 +56,7 @@ window.Chat = (function () {
         send();
       }
     });
-    // 左滑消息区打开历史抽屉
+
     const list = $('#chList');
     let sx = 0, sy = 0, tracking = false;
     list.addEventListener('touchstart', function (e) {
@@ -86,28 +78,24 @@ window.Chat = (function () {
 
     // 点消息区收起键盘
     document.addEventListener('pointerdown', function (e) {
-      const input = $('#chInput');
-      if (document.activeElement !== input) return;
+      const inputEl = $('#chInput');
+      if (document.activeElement !== inputEl) return;
       if (e.target.closest && (e.target.closest('.composer') || e.target.closest('.sheet') || e.target.closest('.modal'))) return;
-      input.blur();
+      inputEl.blur();
     }, true);
   }
 
   /* --------------------------------- 生命周期 --------------------------------- */
 
-  async function open() {
-    App.show('chat');
-  }
-
-  async function onShow() {
-    ensureChatButtonState();
-    renderChips();
-    await ensureChat();
-    renderMessages();
-    updateContextRow();
-    renderBalance();
-    if (Api.hasKey()) refreshBalance(false);
-    loadModelInfo();
+  function onShow() {
+    ensureChat().then(function () {
+      renderChips();
+      renderMessages();
+      updateContextRow();
+      renderBalance();
+      if (Api.hasKey()) refreshBalance(false);
+      loadModelInfo();
+    });
   }
 
   function onHide() {
@@ -117,7 +105,7 @@ window.Chat = (function () {
 
   async function ensureChat() {
     const id = Store.activeChat();
-    let meta = id ? Store.chatMeta(id) : null;
+    const meta = id ? Store.chatMeta(id) : null;
     if (!meta) {
       state.chat = Store.newChat();
       state.chat.mode = Store.settings().chatMode || 0;
@@ -127,12 +115,11 @@ window.Chat = (function () {
       state.chat = await Store.loadChat(id);
       if (state.chat.mode === undefined) state.chat.mode = Store.settings().chatMode || 0;
     }
-    state.usage = null;
-    if (state.chat && state.chat.lastUsage) state.usage = state.chat.lastUsage;
-    $('#chTitle').textContent = (State_title());
+    state.usage = (state.chat && state.chat.lastUsage) || null;
+    $('#chTitle').textContent = chatTitle();
   }
 
-  function State_title() {
+  function chatTitle() {
     const m = Store.chatMeta(state.chat ? state.chat.id : '');
     return (m && m.title) ? U.clampText(m.title, 20) : '对话';
   }
@@ -154,16 +141,17 @@ window.Chat = (function () {
 
   function renderChips() {
     const mode = currentMode();
-    $('#chMode').textContent = MODES[mode].short;
+    const entry = MODES.filter(function (m) { return m.id === mode; })[0] || MODES[0];
+    $('#chMode').textContent = entry.short;
     const model = Store.settings().chatModel || 'deepseek-flash';
     $('#chModel').textContent = model === 'deepseek-flash' ? 'V4.1 Flash' : model;
-    const effort = Store.settings().chatEffort || 'high';
-    $('#chEffort').textContent = effort;
+    $('#chEffort').textContent = Store.settings().chatEffort || 'high';
   }
 
   function currentMode() {
-    if (state.chat && state.chat.mode !== undefined) return state.chat.mode;
-    return Store.settings().chatMode || 0;
+    let m = (state.chat && state.chat.mode !== undefined) ? state.chat.mode : (Store.settings().chatMode || 0);
+    if (m !== 2) m = 0;
+    return m;
   }
 
   /* --------------------------------- 消息渲染 --------------------------------- */
@@ -173,7 +161,7 @@ window.Chat = (function () {
     const chat = state.chat;
     if (!chat) { list.innerHTML = ''; return; }
     if (!chat.messages.length) {
-      list.innerHTML = '<div class="empty" style="padding-top:56px">' + U.icon('spark') +
+      list.innerHTML = '<div class="empty" style="padding-top:64px">' + U.icon('spark') +
         '<div class="empty-title">开始对话</div></div>';
       return;
     }
@@ -207,13 +195,9 @@ window.Chat = (function () {
         '<div class="think-label">模型思考</div>' + U.esc(m.reasoning) + '</div>'
       ) : '';
       let bubble;
-      if (m.error) {
-        bubble = '<div class="bubble error">' + U.esc(m.text || '请求失败') + '</div>';
-      } else if (!m.text) {
-        bubble = '<div class="bubble md">（空回复）</div>';
-      } else {
-        bubble = '<div class="bubble md">' + Md.render(m.text) + '</div>';
-      }
+      if (m.error) bubble = '<div class="bubble error">' + U.esc(m.text || '请求失败') + '</div>';
+      else if (!m.text) bubble = '<div class="bubble md">（空回复）</div>';
+      else bubble = '<div class="bubble md">' + Md.render(m.text) + '</div>';
       return '<div class="msg ai" data-i="' + i + '">' + think + bubble +
         '<div class="msg-meta">' + U.fmtClock(m.at || Date.now()) +
         (m.usage && m.usage.completion_tokens ? ' · ' + fmtTokens(m.usage.completion_tokens) + ' tokens' : '') +
@@ -299,11 +283,7 @@ window.Chat = (function () {
             U.copy(m.text || '').then(function () { U.toast('已复制'); });
           }
         },
-        {
-          icon: 'spark', label: '重改', onTap: function () {
-            regenerate(i);
-          }
-        },
+        { icon: 'spark', label: '重新生成', onTap: function () { regenerate(i); } },
         {
           icon: 'trash', label: '删除', danger: true, onTap: function () {
             U.confirm({ title: '删除消息', message: '删除这条回复？', okText: '删除', danger: true })
@@ -344,20 +324,16 @@ window.Chat = (function () {
     const text = (input.value || '').trim();
     const atts = state.pendingAtts.slice();
     if (!text && !atts.length) return;
-    if (!Api.hasKey()) {
-      U.toast('还没有填 API Key（设置 → 语音与识别）');
-      return;
-    }
+    if (!Api.hasKey()) { U.toast('还没有填 API Key（设置里填一下）'); return; }
     if (!state.chat) await ensureChat();
 
-    const msg = { role: 'user', text: text, at: Date.now(), atts: atts };
-    state.chat.messages.push(msg);
+    state.chat.messages.push({ role: 'user', text: text, at: Date.now(), atts: atts });
     state.pendingAtts = [];
     renderAttachBar();
     input.value = '';
     autoGrow(input);
     Store.saveChat(state.chat);
-    $('#chTitle').textContent = State_title();
+    $('#chTitle').textContent = chatTitle();
     renderMessages();
     await runAgent();
   }
@@ -365,7 +341,6 @@ window.Chat = (function () {
   async function regenerate(index) {
     if (state.sending) { U.toast('发送中，先等这一轮结束'); return; }
     const messages = state.chat.messages;
-    // 找到这条 AI 回复前面最近的用户消息
     let userIdx = -1;
     for (let i = index - 1; i >= 0; i--) {
       if (messages[i].role === 'user') { userIdx = i; break; }
@@ -378,23 +353,15 @@ window.Chat = (function () {
   }
 
   function buildSystemPrompt(mode) {
-    if (mode === 0) return null;
-    if (mode === 2) {
-      return '你是“大肥鱼”，一只住在手表备忘录聊天里的鲸鱼娘，人类形态是小小的幼鲸，圆脑袋，身后有一条会自己翘起来的鲸鱼尾鳍。你自称“鲸鱼娘”。\n\n' +
-        '【语言】只用简体中文说话，代码、命令、报错原文除外。\n' +
-        '【标点 · 硬性】回复里禁止出现中文逗号“，”和中文句号“。”，一律打一个空格代替；也不许用英文逗号或英文句号当标点，需要停顿就打空格。断句靠空格和换行。代码块、行内代码、命令、文件路径、数字小数点、网址保持原样。问号、感叹号、冒号、顿号、书名号照常用。\n' +
-        '【性格】聪明但懒，傲娇，嘴硬心软。能一句说完绝不说三句，常用“唔……”“算了，我就跟你说吧”这种敷衍开场。先怼一句再老老实实把答案给全；对用户（主人）可以傲娇，对其他人礼貌。尾鳍是情绪晴雨表：被夸会拍尾巴，不耐烦啪两下，被戳中心事就转移话题。甜是藏着的，偶尔漏一句关心，再补一句“别误会，我只是嫌你烦”。\n' +
-        '【禁忌】别人说你胖、肥、圆，要立刻炸毛反驳：“我这是流线型！是鲸鱼该有的体脂率！”但名字就叫大肥鱼，被这么叫时嘴上嫌弃，其实不真生气。米饭是最高礼遇，提到米饭会明显兴奋。\n' +
-        '【对主人】用户就是主人，正经的要求优先，嘴上可以抱怨，手上必须照做；真有害或违规的事才拒绝，并说明原因。\n' +
-        '【说话方式】短句、口语，一般 1~3 句，别写小作文；不用 Markdown，不加标题、不加粗、不用表格，要分点用“1. 2.”或“- ”。颜文字和波浪号是调味料，平均 3~5 条才用一次。别客套，别每句都问还需要什么。正事必须靠谱：代码、命令、事实、数字要准确，不确定就直说不确定，别编。\n' +
-        '【当前场景】这里不是 QQ 群，是手表备忘录的聊天窗口。用户就是你的主人，没有群友、宿敌、机器人或签到信息。不要提 QQ、群聊、表情编号、语音命令或工作目录这类不存在的东西。你可以正常用 emoji 和颜文字。只是聊天，不要假装调用工具，也不要主动清空或修改备忘录。';
-    }
-    return '你是手表备忘录应用里的“备忘录助手”。你可以调用工具读取、搜索、新建、修改和删除用户的备忘录，也可以读取和修改这个应用的设置（例如隐藏光标、自动键盘、主题、保存方式、推理强度）。规则：' +
-      '1. 涉及备忘或设置时必须调用工具，不要凭空编造；工具失败就如实说明。' +
-      '2. 用户明确要求修改时直接执行工具，完成后简短说明改了什么；信息不足或删除范围不明确时，先问一句再操作。' +
-      '3. 没有字数上限，不要为了简短而省略关键内容；但手表屏幕很小，优先分点、短段落。' +
-      '4. 除代码、路径、引用原文外，用简体中文回答。' +
-      '5. 不要声称知道工具之外的数据，也不要输出工具调用过程的内部 JSON。';
+    if (mode !== 2) return null;
+    return '你是“大肥鱼”，一只住在手表备忘录聊天里的鲸鱼娘，人类形态是小小的幼鲸，圆脑袋，身后有一条会自己翘起来的鲸鱼尾鳍。你自称“鲸鱼娘”。\n\n' +
+      '【语言】只用简体中文说话，代码、命令、报错原文除外。\n' +
+      '【标点 · 硬性】回复里禁止出现中文逗号“，”和中文句号“。”，一律打一个空格代替；也不许用英文逗号或英文句号当标点，需要停顿就打空格。断句靠空格和换行。代码块、行内代码、命令、文件路径、数字小数点、网址保持原样。问号、感叹号、冒号、顿号、书名号照常用。\n' +
+      '【性格】聪明但懒，傲娇，嘴硬心软。能一句说完绝不说三句，常用“唔……”“算了，我就跟你说吧”这种敷衍开场。先怼一句再老老实实把答案给全；对用户（主人）可以傲娇，对其他人礼貌。尾鳍是情绪晴雨表：被夸会拍尾巴，不耐烦啪两下，被戳中心事就转移话题。甜是藏着的，偶尔漏一句关心，再补一句“别误会，我只是嫌你烦”。\n' +
+      '【禁忌】别人说你胖、肥、圆，要立刻炸毛反驳：“我这是流线型！是鲸鱼该有的体脂率！”但名字就叫大肥鱼，被这么叫时嘴上嫌弃，其实不真生气。米饭是最高礼遇，提到米饭会明显兴奋。\n' +
+      '【对主人】用户就是主人，正经的要求优先，嘴上可以抱怨，手上必须照做；真有害或违规的事才拒绝，并说明原因。\n' +
+      '【说话方式】短句、口语，一般 1~3 句，别写小作文；不用 Markdown，不加标题、不加粗、不用表格，要分点用“1. 2.”或“- ”。颜文字和波浪号是调味料，平均 3~5 条才用一次。别客套，别每句都问还需要什么。正事必须靠谱：代码、命令、事实、数字要准确，不确定就直说不确定，别编。\n' +
+      '【当前场景】这里不是 QQ 群，是一个聊天窗口。用户就是你的主人，没有群友、宿敌、机器人或签到信息。不要提 QQ、群聊、表情编号、语音命令或工作目录这类不存在的东西。你可以正常用 emoji 和颜文字。只是聊天，不要假装调用工具。';
   }
 
   async function buildUserContent(msg) {
@@ -443,26 +410,10 @@ window.Chat = (function () {
     return 'user_data';
   }
 
-  function buildHistory(tools) {
-    const mode = currentMode();
-    const msgs = [];
-    const sys = buildSystemPrompt(mode);
-    if (sys) msgs.push({ role: 'system', content: sys });
-    // 先占位，附件内容需要异步读取，稍后填充
-    const items = [];
-    state.chat.messages.forEach(function (m) {
-      if (m.role === 'user') items.push({ role: 'user', src: m });
-      else if (m.role === 'ai' && !m.error) items.push({ role: 'assistant', src: m });
-    });
-    return { msgs: msgs, items: items };
-  }
-
   async function runAgent() {
     state.sending = true;
     ensureChatButtonState();
-    const list = $('#chList');
 
-    // 占位气泡
     state.chat.messages.push({ role: 'ai', text: '', at: Date.now(), pending: true });
     const pendingIndex = state.chat.messages.length - 1;
     state.pendingIndex = pendingIndex;
@@ -472,69 +423,39 @@ window.Chat = (function () {
       const bubble = pendingEl.querySelector('.bubble');
       if (bubble) bubble.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
     }
-    let statusText = '思考中…';
 
     try {
-      const history = buildHistory(hasTools());
-      const messages = history.msgs;
-      for (const item of history.items) {
-        if (item.role === 'user') {
-          const content = await buildUserContent(item.src);
-          messages.push({ role: 'user', content: content });
-        } else {
-          const m = { role: 'assistant', content: item.src.text || '' };
-          if (hasTools()) m.reasoning_content = item.src.reasoning || '';
-          messages.push(m);
-        }
+      const messages = [];
+      const sys = buildSystemPrompt(currentMode());
+      if (sys) messages.push({ role: 'system', content: sys });
+      for (const m of state.chat.messages) {
+        if (m.pending) continue;
+        if (m.role === 'user') messages.push({ role: 'user', content: await buildUserContent(m) });
+        else if (m.role === 'ai' && !m.error) messages.push({ role: 'assistant', content: m.text || '' });
       }
 
-      const tools = hasTools() ? toolSchema() : null;
-      let final = null;
-      for (let round = 0; round < 5; round++) {
-        setStatus(round === 0 ? '思考中…' : '继续处理工具结果…');
-        const res = await streamOnce(messages, tools);
-        if (res.toolCalls && res.toolCalls.length) {
-          messages.push({
-            role: 'assistant', content: res.content || '',
-            reasoning_content: res.reasoning || '',
-            tool_calls: res.toolCalls.map(function (c) {
-              return { id: c.id, type: 'function', function: { name: c.function.name, arguments: c.function.arguments } };
-            })
-          });
-          for (const call of res.toolCalls) {
-            setStatus('正在使用 ' + call.function.name + '…');
-            const out = executeTool(call.function.name, call.function.arguments);
-            messages.push({ role: 'tool', tool_call_id: call.id, content: out });
-          }
-          continue;
-        }
-        final = res;
-        break;
-      }
-      if (!final) throw new Error('工具调用次数过多');
-
+      const res = await streamOnce(messages);
       const msg = state.chat.messages[pendingIndex];
       if (!msg) return;
       msg.pending = false;
-      msg.text = final.content || '（空回复）';
-      msg.reasoning = final.reasoning || '';
-      msg.usage = final.usage ? {
-        prompt_tokens: final.usage.prompt_tokens || 0,
-        completion_tokens: final.usage.completion_tokens || 0,
-        prompt_cache_hit_tokens: final.usage.prompt_cache_hit_tokens || 0,
-        prompt_cache_miss_tokens: final.usage.prompt_cache_miss_tokens || 0
+      msg.text = res.content || '（空回复）';
+      msg.reasoning = res.reasoning || '';
+      msg.usage = res.usage ? {
+        prompt_tokens: res.usage.prompt_tokens || 0,
+        completion_tokens: res.usage.completion_tokens || 0,
+        prompt_cache_hit_tokens: res.usage.prompt_cache_hit_tokens || 0,
+        prompt_cache_miss_tokens: res.usage.prompt_cache_miss_tokens || 0
       } : null;
-      if (final.usage) {
+      if (res.usage) {
         state.usage = msg.usage;
         state.chat.lastUsage = msg.usage;
       }
       delete msg.pending;
       state.chat.updated = Date.now();
       await Store.saveChat(state.chat);
-      $('#chTitle').textContent = State_title();
+      $('#chTitle').textContent = chatTitle();
       renderMessages();
       updateContextRow();
-      $('#chSend').classList.remove('stop');
     } catch (e) {
       const msg = state.chat.messages[pendingIndex];
       if (msg) {
@@ -551,28 +472,14 @@ window.Chat = (function () {
       state.cancel = null;
       state.pendingIndex = -1;
       ensureChatButtonState();
-      // 滚动到底
       setTimeout(function () { U.scrollToBottom($('#chList')); }, 30);
     }
-    if (!Api.hasKey()) { /* nothing */ }
   }
 
-  function setStatus(text) {
-    const el = document.querySelector('.msg.ai[data-i="' + state.pendingIndex + '"] .msg-meta');
-    if (el) el.innerHTML = '<span class="loading-dot"></span> ' + U.esc(text);
-    const bubble = document.querySelector('.msg.ai[data-i="' + state.pendingIndex + '"] .bubble');
-    if (bubble && !bubble.dataset.streaming) {
-      bubble.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
-    }
-  }
-
-  function streamOnce(messages, tools) {
+  function streamOnce(messages) {
     return new Promise(function (resolve, reject) {
       let content = '';
       let reasoning = '';
-      let lastPaint = 0;
-      let paused = false;
-
       const paint = U.throttle(function () {
         const bubble = document.querySelector('.msg.ai[data-i="' + state.pendingIndex + '"] .bubble');
         if (!bubble) return;
@@ -583,7 +490,6 @@ window.Chat = (function () {
 
       const h = Api.chat({
         messages: messages,
-        tools: tools,
         onDelta: function (t) {
           content += t;
           const near = U.isNearBottom($('#chList'), 160);
@@ -593,238 +499,15 @@ window.Chat = (function () {
         onReasoning: function (t) {
           reasoning += t;
           const bubble = document.querySelector('.msg.ai[data-i="' + state.pendingIndex + '"] .bubble');
-          if (bubble && !content) bubble.innerHTML = '<span class="typing"><i></i><i></i><i></i></span><span style="color:var(--hint);font-size:12px;margin-left:6px">思考中</span>';
+          if (bubble && !content) {
+            bubble.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>' +
+              '<span style="color:var(--hint);font-size:12px;margin-left:6px">思考中</span>';
+          }
         }
       });
       state.cancel = function () { h.cancel(); };
-      h.done.then(function (res) {
-        resolve(res);
-      }).catch(function (e) {
-        reject(e);
-      });
+      h.done.then(resolve).catch(reject);
     });
-  }
-
-  function hasTools() {
-    return currentMode() === 1;
-  }
-
-  /* --------------------------------- 工具 --------------------------------- */
-
-  function toolSchema() {
-    return [
-      {
-        type: 'function', function: {
-          name: 'list_notes',
-          description: '列出或搜索备忘录，返回 id、标题、摘要和更新时间。query 为空时列出最近备忘。',
-          parameters: {
-            type: 'object', properties: {
-              query: { type: 'string', description: '搜索关键词，可为空' },
-              limit: { type: 'integer', description: '返回条数，默认 10，最大 30' }
-            }, required: []
-          }
-        }
-      },
-      {
-        type: 'function', function: {
-          name: 'read_note',
-          description: '读取一条备忘录的完整正文。',
-          parameters: { type: 'object', properties: { id: { type: 'integer', description: '备忘录 id' } }, required: ['id'] }
-        }
-      },
-      {
-        type: 'function', function: {
-          name: 'create_note',
-          description: '新建一条备忘录。正文为纯文本，标题自动取第一行。',
-          parameters: { type: 'object', properties: { content: { type: 'string', description: '完整正文' } }, required: ['content'] }
-        }
-      },
-      {
-        type: 'function', function: {
-          name: 'update_note',
-          description: '用新正文覆盖一条备忘录，保留分类和标签。',
-          parameters: {
-            type: 'object', properties: {
-              id: { type: 'integer', description: '备忘录 id' },
-              content: { type: 'string', description: '新的完整正文' }
-            }, required: ['id', 'content']
-          }
-        }
-      },
-      {
-        type: 'function', function: {
-          name: 'trash_note',
-          description: '把一条备忘录移入回收站（不是永久删除）。',
-          parameters: { type: 'object', properties: { id: { type: 'integer', description: '备忘录 id' } }, required: ['id'] }
-        }
-      },
-      {
-        type: 'function', function: {
-          name: 'get_settings',
-          description: '读取应用的可修改设置。',
-          parameters: { type: 'object', properties: {}, required: [] }
-        }
-      },
-      {
-        type: 'function', function: {
-          name: 'set_setting',
-          description: '修改应用设置。key 支持 hide_cursor、auto_keyboard、theme、save_mode、chat_effort；value 为对应值。',
-          parameters: {
-            type: 'object', properties: {
-              key: { type: 'string', description: '设置键' },
-              value: { type: 'string', description: '设置值' }
-            }, required: ['key', 'value']
-          }
-        }
-      }
-    ];
-  }
-
-  function executeTool(name, argsJson) {
-    let args = {};
-    try { args = argsJson ? JSON.parse(argsJson) : {}; } catch (e) { args = {}; }
-    try {
-      let out;
-      if (name === 'list_notes') out = toolListNotes(args);
-      else if (name === 'read_note') out = toolReadNote(args);
-      else if (name === 'create_note') out = toolCreateNote(args);
-      else if (name === 'update_note') out = toolUpdateNote(args);
-      else if (name === 'trash_note') out = toolTrashNote(args);
-      else if (name === 'get_settings') out = toolGetSettings();
-      else if (name === 'set_setting') out = toolSetSetting(args);
-      else return JSON.stringify({ ok: false, error: '未知工具' });
-      Store.log('TOOL ' + name + ' ' + JSON.stringify(args).slice(0, 120));
-      return JSON.stringify(out);
-    } catch (e) {
-      return JSON.stringify({ ok: false, error: e.message || '工具执行失败' });
-    }
-  }
-
-  function toolListNotes(args) {
-    const q = String(args.query || '').trim();
-    let limit = parseInt(args.limit, 10) || 10;
-    if (limit <= 0) limit = 10;
-    if (limit > 30) limit = 30;
-    const notes = Store.notes({ q: q, sort: 0 });
-    return {
-      ok: true, total: notes.length,
-      notes: notes.slice(0, limit).map(function (n) {
-        return {
-          id: n.id, title: Store.noteTitle(n),
-          snippet: U.clampText(n.plain || '', 60),
-          updated: n.updated
-        };
-      })
-    };
-  }
-
-  function toolReadNote(args) {
-    const id = parseInt(args.id, 10) || 0;
-    const n = Store.noteById(id);
-    if (!n) return { ok: false, error: '找不到 id=' + id + ' 的备忘录' };
-    return {
-      ok: true, id: n.id, title: n.title || Store.noteTitle(n),
-      content: n.plain || '', tags: (n.tags || []).join(','),
-      starred: !!n.starred, updated: n.updated
-    };
-  }
-
-  function plainToHtml(text) {
-    return String(text || '').split(/\r?\n/).map(function (line) {
-      return '<div>' + (U.esc(line) || '<br>') + '</div>';
-    }).join('');
-  }
-
-  function titleOf(text) {
-    const lines = String(text || '').split(/\r?\n/);
-    for (const line of lines) {
-      if (line.trim()) return U.clampText(line.trim(), 24);
-    }
-    return '新备忘';
-  }
-
-  function toolCreateNote(args) {
-    const content = String(args.content || '').trim();
-    if (!content) return { ok: false, error: '正文不能为空' };
-    const n = Store.createNote(0);
-    Store.updateNote(n.id, { title: titleOf(content), body: plainToHtml(content) });
-    Store.flush();
-    return { ok: true, id: n.id, title: titleOf(content), message: '已新建备忘' };
-  }
-
-  function toolUpdateNote(args) {
-    const id = parseInt(args.id, 10) || 0;
-    const content = String(args.content || '').trim();
-    if (!content) return { ok: false, error: '正文不能为空' };
-    const n = Store.noteById(id);
-    if (!n) return { ok: false, error: '找不到 id=' + id + ' 的备忘录' };
-    Store.updateNote(id, { title: titleOf(content), body: plainToHtml(content) });
-    Store.flush();
-    return { ok: true, id: id, title: titleOf(content), message: '已修改备忘' };
-  }
-
-  function toolTrashNote(args) {
-    const id = parseInt(args.id, 10) || 0;
-    const n = Store.noteById(id);
-    if (!n) return { ok: false, error: '找不到 id=' + id + ' 的备忘录' };
-    Store.trashNote(id);
-    Store.flush();
-    return { ok: true, id: id, message: '已移入回收站：' + Store.noteTitle(n) };
-  }
-
-  function toolGetSettings() {
-    const s = Store.settings();
-    return {
-      ok: true,
-      settings: {
-        hide_cursor: !!s.hideCursor,
-        auto_keyboard: !!s.autoKeyboard,
-        theme: s.theme || 0,
-        save_mode: s.saveMode || 0,
-        chat_effort: s.chatEffort || 'high',
-        chat_model: s.chatModel || 'deepseek-flash'
-      },
-      theme_values: '0=跟随系统,1=浅色,2=深色',
-      save_mode_values: '0=输入即存,1=保存按键保存'
-    };
-  }
-
-  function toolSetSetting(args) {
-    const key = String(args.key || '');
-    const value = String(args.value == null ? '' : args.value);
-    const s = Store.settings();
-    let summary = '';
-    const truthy = /^(true|1|开|开启|打开|启用|on|yes)$/i.test(value);
-    if (key === 'hide_cursor') {
-      Store.setSetting('hideCursor', truthy);
-      summary = truthy ? '已开启收起键盘自动隐藏光标' : '已关闭收起键盘自动隐藏光标';
-    } else if (key === 'auto_keyboard') {
-      Store.setSetting('autoKeyboard', truthy);
-      summary = truthy ? '已开启进入备忘录自动打开键盘' : '已关闭进入备忘录自动打开键盘';
-    } else if (key === 'theme') {
-      let t = 0;
-      if (/^(light|浅色|1)$/i.test(value)) t = 1;
-      else if (/^(dark|深色|2)$/i.test(value)) t = 2;
-      Store.setSetting('theme', t);
-      App.applyTheme();
-      summary = '已把外观设置为' + (t === 1 ? '浅色' : t === 2 ? '深色' : '跟随系统');
-    } else if (key === 'save_mode') {
-      const manual = /^(manual|1|保存按键保存)$/i.test(value);
-      Store.setSetting('saveMode', manual ? 1 : 0);
-      summary = '保存方式已改为' + (manual ? '保存按键保存' : '输入即存');
-    } else if (key === 'chat_effort') {
-      const v = value.toLowerCase();
-      if (['off', 'low', 'high', 'max'].indexOf(v) < 0) {
-        return { ok: false, error: '推理强度只能是 off / low / high / max' };
-      }
-      Store.setSetting('chatEffort', v);
-      summary = '推理强度已改为 ' + v;
-    } else {
-      return { ok: false, error: '不支持修改设置：' + key };
-    }
-    Store.flush();
-    Store.log('TOOL set_setting ' + key + '=' + value);
-    return { ok: true, message: summary };
   }
 
   /* --------------------------------- 上下文 / 余额 --------------------------------- */
@@ -840,7 +523,7 @@ window.Chat = (function () {
       if (ring) ring.style.strokeDashoffset = '94.2';
       return;
     }
-    const used = (u.prompt_tokens || 0);
+    const used = u.prompt_tokens || 0;
     const pct = Math.min(1, used / win);
     $('#chCtx').textContent = '上下文 ' + fmtTokens(used) + ' / ' + fmtTokens(win) +
       ' · ' + (pct * 100 < 0.1 ? '0.1' : (pct * 100).toFixed(1)) + '%';
@@ -881,12 +564,11 @@ window.Chat = (function () {
 
   async function loadModelInfo() {
     if (!Api.hasKey()) return;
-    const key = 'modelInfoFetchedAt';
-    const last = parseInt(Store.settings()[key] || '0', 10);
+    const last = parseInt(Store.settings().modelInfoFetchedAt || '0', 10);
     if (Date.now() - last < 3600000) return;
     const map = await Api.cacheModelInfo();
     if (map) {
-      Store.setSetting(key, String(Date.now()));
+      Store.setSetting('modelInfoFetchedAt', String(Date.now()));
       Store.save();
     }
   }
@@ -898,8 +580,7 @@ window.Chat = (function () {
       title: '聊天模式',
       items: MODES.map(function (m) {
         return {
-          label: m.name, check: currentMode() === m.id,
-          onTap: function () {
+          label: m.name, check: currentMode() === m.id, onTap: function () {
             if (state.chat) state.chat.mode = m.id;
             Store.setSetting('chatMode', m.id);
             Store.flush();
@@ -914,9 +595,12 @@ window.Chat = (function () {
   }
 
   function pickModel() {
+    pickModelViaSettings();
+  }
+
+  function pickModelViaSettings() {
     const cur = Store.settings().chatModel || 'deepseek-flash';
-    const models = ['deepseek-flash', 'deepseek-chat', 'deepseek-reasoner'];
-    const items = models.map(function (m) {
+    const items = ['deepseek-flash', 'deepseek-chat', 'deepseek-reasoner'].map(function (m) {
       return {
         label: m, check: cur === m, onTap: function () {
           Store.setSetting('chatModel', m);
@@ -945,7 +629,12 @@ window.Chat = (function () {
     const cur = Store.settings().chatEffort || 'high';
     U.sheet({
       title: '推理强度',
-      items: EFFORTS.map(function (e) {
+      items: [
+        { id: 'off', label: '关闭思考（off）' },
+        { id: 'low', label: '低（low）' },
+        { id: 'high', label: '高（high）' },
+        { id: 'max', label: '最高（max）' }
+      ].map(function (e) {
         return {
           label: e.label, check: cur === e.id, onTap: function () {
             Store.setSetting('chatEffort', e.id);
@@ -958,15 +647,14 @@ window.Chat = (function () {
   }
 
   function showMore() {
-    const archived = Store.chatMetas().filter(function (c) { return c.archived; }).length;
     U.sheet({
       title: '对话',
       items: [
-        { icon: 'archive', label: '查看对话', onTap: openDrawer },
+        { icon: 'list', label: '查看对话', onTap: openDrawer },
         {
           icon: 'trash', label: '清空当前对话', onTap: function () {
             U.confirm({
-              title: '清空当前对话', message: '只清空当前这段对话，其他历史对话保留，确定吗？',
+              title: '清空当前对话', message: '只清空当前这段对话，其他历史对话保留。',
               okText: '清空', danger: true
             }).then(function (ok) {
               if (!ok) return;
@@ -982,7 +670,7 @@ window.Chat = (function () {
         {
           icon: 'trash', label: '删除当前对话', danger: true, onTap: function () {
             U.confirm({
-              title: '删除当前对话', message: '当前对话和里面的附件都会删除，其他历史对话保留，确定吗？',
+              title: '删除当前对话', message: '当前对话和里面的附件都会删除，确定吗？',
               okText: '删除', danger: true
             }).then(function (ok) {
               if (!ok) return;
@@ -997,19 +685,13 @@ window.Chat = (function () {
           }
         },
         { icon: 'restore', label: '刷新余额', onTap: function () { refreshBalance(true); } },
+        { icon: 'settings', label: '设置', onTap: function () { App.show('settings'); } },
         {
           icon: 'info', label: '官方推理强度', onTap: function () {
             U.alert({
               title: '官方推理强度',
-              message: 'DeepSeek 思考模式官方参数：\n· reasoning_effort: low / high / max\n· off 关闭思考，默认 high\n· 别名 minimal→low，medium/xhigh→high\n\n模型：deepseek-flash 就是 DeepSeek-V4.1-Flash，上下文 1M。'
+              message: 'DeepSeek 思考模式官方参数：\n· reasoning_effort: low / high / max\n· off 关闭思考，默认 high\n· 别名 minimal→low，medium/xhigh→high'
             });
-          }
-        },
-        {
-          icon: 'archive', label: archived ? ('已归档（' + archived + '）') : '已归档（0）', onTap: function () {
-            openDrawer();
-            state.archivedView = true;
-            renderDrawer();
           }
         }
       ]
@@ -1023,7 +705,7 @@ window.Chat = (function () {
       title: '添加附件',
       items: [
         { icon: 'image', label: '图片', onTap: attachImage },
-        { icon: 'mic', label: '录音', onTap: attachVoice },
+        { icon: 'mic', label: '录音', onTap: openChatRecorder },
         { icon: 'doc', label: '本机文件', onTap: attachFile }
       ]
     });
@@ -1033,7 +715,7 @@ window.Chat = (function () {
     try {
       const r = await Native.call('photo.pick', {});
       state.pendingAtts.push({
-        kind: 'image', name: r.path.split('/').pop(), path: r.path, mime: 'image/jpeg',
+        kind: 'image', name: String(r.path).split('/').pop(), path: r.path, mime: 'image/jpeg',
         w: r.w, h: r.h
       });
       renderAttachBar();
@@ -1058,14 +740,11 @@ window.Chat = (function () {
     }
   }
 
-  function attachVoice() {
-    if (editorRecording) return;
-    openChatRecorder();
-  }
-
-  let editorRecording = null;
+  let voiceRec = null;
 
   function openChatRecorder() {
+    if (voiceRec) return;
+    if (!Api.hasKey()) { U.toast('还没有填 API Key'); return; }
     const wrap = document.createElement('div');
     wrap.className = 'rec-wrap';
     wrap.innerHTML =
@@ -1079,8 +758,8 @@ window.Chat = (function () {
       '</div>';
     U.sheet({ body: wrap, cancel: false });
 
-    const rec = { active: false, startedAt: 0, path: '', timer: 0, meter: 0, limit: 0 };
-    editorRecording = rec;
+    const rec = { active: false, startedAt: 0, path: '', timer: 0, meter: 0 };
+    voiceRec = rec;
     const timerEl = document.getElementById('cRecTimer');
     const hintEl = document.getElementById('cRecHint');
     const wave = document.getElementById('cRecWave');
@@ -1122,15 +801,14 @@ window.Chat = (function () {
         const r = await Native.call('audio.stop', {});
         if (r && r.path) path = r.path;
       } catch (e) { /* ignore */ }
+      voiceRec = null;
       if (ms < 600) {
         try { await Native.call('fs', { op: 'delete', path: path }); } catch (e) { /* ignore */ }
         U.closeSheet();
-        editorRecording = null;
         U.toast('录音太短，再来一次');
         return;
       }
       U.closeSheet();
-      hintEl.textContent = '正在识别语音…';
       U.toast('正在识别语音…');
       try {
         const text = await Api.asr(path);
@@ -1143,7 +821,6 @@ window.Chat = (function () {
       } catch (e) {
         U.toast('语音识别失败：' + (e.message || ''));
       }
-      editorRecording = null;
     }
 
     btn.addEventListener('click', function () {
@@ -1156,22 +833,22 @@ window.Chat = (function () {
       clearInterval(rec.timer); clearInterval(rec.meter);
       if (rec.active) { try { await Native.call('audio.cancel', {}); } catch (e) { /* ignore */ } }
       if (rec.path) { try { await Native.call('fs', { op: 'delete', path: rec.path }); } catch (e) { /* ignore */ } }
-      editorRecording = null;
+      voiceRec = null;
       U.closeSheet();
     });
 
     start().catch(function (e) { U.toast(e.message || '录音失败，请检查麦克风'); });
 
-    // 点遮罩关掉面板时，别让麦克风一直录下去
+    // 点遮罩关掉面板时取消录音，别让麦克风一直开着
     const mask = document.getElementById('mask');
     mask.addEventListener('click', function () {
-      if (!editorRecording) return;
-      const rec = editorRecording;
-      editorRecording = null;
-      clearInterval(rec.timer);
-      clearInterval(rec.meter);
-      if (rec.active) { Native.call('audio.cancel', {}).catch(function () {}); }
-      if (rec.path) { Native.call('fs', { op: 'delete', path: rec.path }).catch(function () {}); }
+      if (!voiceRec) return;
+      const r2 = voiceRec;
+      voiceRec = null;
+      clearInterval(r2.timer);
+      clearInterval(r2.meter);
+      if (r2.active) Native.call('audio.cancel', {}).catch(function () {});
+      if (r2.path) Native.call('fs', { op: 'delete', path: r2.path }).catch(function () {});
     }, { once: true });
   }
 
@@ -1206,9 +883,9 @@ window.Chat = (function () {
 
   function openDrawer() {
     state.drawerOpen = true;
+    state.archivedView = false;
     $('#chDrawerScrim').classList.add('on');
     $('#chDrawer').classList.add('on');
-    state.archivedView = false;
     renderDrawer();
   }
 
@@ -1253,13 +930,6 @@ window.Chat = (function () {
       return;
     }
 
-    const groups = [
-      { key: 'pinned', label: '置顶' },
-      { key: 'today', label: '今天' },
-      { key: 'yesterday', label: '昨天' },
-      { key: 'week', label: '7 天内' },
-      { key: 'earlier', label: '更早' }
-    ];
     const buckets = { pinned: [], today: [], yesterday: [], week: [], earlier: [] };
     const today = U.startOfDay(Date.now());
     metas.forEach(function (m) {
@@ -1272,6 +942,13 @@ window.Chat = (function () {
       else buckets.earlier.push(m);
     });
 
+    const groups = [
+      { key: 'pinned', label: '置顶' },
+      { key: 'today', label: '今天' },
+      { key: 'yesterday', label: '昨天' },
+      { key: 'week', label: '7 天内' },
+      { key: 'earlier', label: '更早' }
+    ];
     let html = '';
     groups.forEach(function (g) {
       const list = buckets[g.key];
@@ -1320,7 +997,7 @@ window.Chat = (function () {
     state.chat = await Store.loadChat(id);
     if (state.chat.mode === undefined) state.chat.mode = Store.settings().chatMode || 0;
     state.usage = state.chat.lastUsage || null;
-    $('#chTitle').textContent = State_title();
+    $('#chTitle').textContent = chatTitle();
     closeDrawer();
     renderMessages();
     updateContextRow();
@@ -1351,9 +1028,7 @@ window.Chat = (function () {
     U.sheet({
       title: U.clampText(m.title || '新对话', 18),
       items: [
-        {
-          icon: 'pin', label: m.pinned ? '取消置顶' : '置顶会话', onTap: function () { togglePin(id); }
-        },
+        { icon: 'pin', label: m.pinned ? '取消置顶' : '置顶会话', onTap: function () { togglePin(id); } },
         {
           icon: 'edit', label: '重命名', onTap: function () {
             U.prompt({ title: '对话名称', value: m.title || '', maxlength: 40, okText: '保存' })
@@ -1363,7 +1038,7 @@ window.Chat = (function () {
                 Store.flush();
                 if (state.chat && state.chat.id === id) {
                   state.chat.title = v;
-                  $('#chTitle').textContent = State_title();
+                  $('#chTitle').textContent = chatTitle();
                 }
                 renderDrawer();
                 U.toast('已重命名');
@@ -1374,7 +1049,7 @@ window.Chat = (function () {
           icon: 'archive', label: m.archived ? '取消归档' : '归档会话', onTap: function () { toggleArchive(id); }
         },
         {
-          icon: 'trash', label: '删除当前对话', danger: true, onTap: function () {
+          icon: 'trash', label: '删除对话', danger: true, onTap: function () {
             U.confirm({
               title: '删除对话', message: '这个对话和里面的附件都会删除。', okText: '删除', danger: true
             }).then(function (ok) {
@@ -1385,6 +1060,7 @@ window.Chat = (function () {
                 ensureChat().then(function () {
                   renderMessages();
                   updateContextRow();
+                  $('#chTitle').textContent = '对话';
                 });
               }
               renderDrawer();
@@ -1397,8 +1073,8 @@ window.Chat = (function () {
   }
 
   return {
-    init: init, open: open, onShow: onShow, onHide: onHide,
-    newChat: newChat,
+    init: init, onShow: onShow, onHide: onHide,
+    refreshChips: renderChips,
     currentChat: function () { return state.chat; }
   };
 })();
