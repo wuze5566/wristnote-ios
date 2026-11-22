@@ -75,7 +75,7 @@ window.Chat = (function () {
       if (!tracking) return;
       const dx = e.touches[0].clientX - sx;
       const dy = e.touches[0].clientY - sy;
-      if (dx > 60 && Math.abs(dy) < 40) {
+      if (Math.abs(dx) > 60 && Math.abs(dy) < 40) {
         tracking = false;
         openDrawer();
       } else if (Math.abs(dx) > 20) {
@@ -235,6 +235,10 @@ window.Chat = (function () {
 
   function fmtTokens(n) {
     if (!n && n !== 0) return '—';
+    if (n >= 1000000) {
+      const m = n / 1000000;
+      return (m % 1 === 0 ? m.toFixed(0) : m.toFixed(1)) + 'M';
+    }
     if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
     return String(n);
   }
@@ -1333,7 +1337,7 @@ window.Chat = (function () {
             U.prompt({ title: '对话名称', value: m.title || '', maxlength: 40, okText: '保存' })
               .then(function (v) {
                 if (!v) return;
-                Store.updateChatMeta(id, { title: v });
+                Store.updateChatMeta(id, { title: v, customTitle: true });
                 Store.flush();
                 if (state.chat && state.chat.id === id) {
                   state.chat.title = v;

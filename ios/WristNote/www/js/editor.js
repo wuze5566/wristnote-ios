@@ -88,8 +88,8 @@ window.Editor = (function () {
   }
 
   function onHide() {
-    stopInlineAudio();
     if (state.record) finishRecording(false);
+    stopInlineAudio();
     if (state.dirty) saveNow(false);
   }
 
@@ -471,6 +471,7 @@ window.Editor = (function () {
       const img = document.createElement('img');
       img.setAttribute('data-path', r.path);
       img.setAttribute('src', Store.mediaURL(r.path));
+      bindImgFallback(img, r.path);
       insertBlockNode(img);
       Store.log('插入图片 ' + r.path + ' ' + r.w + 'x' + r.h);
     } catch (e) {
@@ -730,10 +731,10 @@ window.Editor = (function () {
   }
 
   function stopInlineAudio() {
-    if (inline.atom || inline.playing) {
+    if (inline.playing) {
       try { Native.call('audio.stop', {}); } catch (e) { /* ignore */ }
-      inlineReset();
     }
+    inlineReset();
   }
 
   function onAudioEvent(ev) {
@@ -812,11 +813,31 @@ window.Editor = (function () {
 
   function hydrateMedia(root) {
     U.$$('img[data-path]', root).forEach(function (img) {
-      const url = Store.mediaURL(img.getAttribute('data-path'));
+      const p = img.getAttribute('data-path');
+      const url = Store.mediaURL(p);
       if (url) img.setAttribute('src', url);
+      bindImgFallback(img, p);
     });
     U.$$('img[data-asset]', root).forEach(function (img) {
       img.setAttribute('src', img.getAttribute('data-asset'));
+    });
+  }
+
+  // 万一自定义协议没取到图片，退回 base64，保证图片不空白
+  function bindImgFallback(img, path) {
+    img.addEventListener('error', function onErr() {
+      img.removeEventListener('error', onErr);
+      if (img.dataset.fallback) return;
+      img.dataset.fallback = '1';
+      Native.call('fs', { op: 'bytes', path: path }).then(function (r) {
+        let mime = 'image/jpeg';
+        if (/\.png$/i.test(path)) mime = 'image/png';
+        else if (/\.gif$/i.test(path)) mime = 'image/gif';
+        img.setAttribute('src', 'data:' + mime + ';base64,' + r.base64);
+        Store.log('图片回退 base64 ' + path);
+      }).catch(function () {
+        Store.log('图片读取失败 ' + path);
+      });
     });
   }
 

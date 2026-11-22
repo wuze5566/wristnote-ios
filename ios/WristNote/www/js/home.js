@@ -130,7 +130,7 @@ window.Home = (function () {
         '<div class="note-meta">' +
         (cat ? '<span class="note-cat"><i class="dot" style="background:' + U.esc(cat.color) + '"></i>' + U.esc(cat.name) + '</span>' : '') +
         (tags ? '<span class="note-tags">#' + U.esc(tags) + '</span>' : '') +
-        '<span class="note-time">' + U.fmtClock(n.updated) + '</span>' +
+        '<span class="note-time">' + U.noteTimeLabel(n.updated) + '</span>' +
         '</div></article>';
     });
     box.innerHTML = html;

@@ -449,7 +449,7 @@ window.Store = (function () {
       };
       db.chats.push(meta);
     } else {
-      if (!chat.title) meta.title = autoTitle;
+      if (!chat.title && !meta.customTitle) meta.title = autoTitle;
       meta.updated = chat.updated;
       meta.count = chat.messages.length;
     }

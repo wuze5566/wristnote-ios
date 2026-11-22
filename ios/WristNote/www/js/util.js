@@ -51,8 +51,18 @@ window.U = (function () {
     return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日';
   }
 
-  function relTime(ts) {
-    const diff = Date.now() - ts;
+  /** 列表右侧时间：今天显示 HH:MM，今年显示 M/D，更早显示 YYYY/M/D */
+  function noteTimeLabel(ts) {
+    const d = new Date(ts);
+    const now = new Date();
+    if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()) {
+      return fmtClock(ts);
+    }
+    if (d.getFullYear() === now.getFullYear()) return (d.getMonth() + 1) + '/' + d.getDate();
+    return d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate();
+  }
+
+  function relTime(ts) {    const diff = Date.now() - ts;
     if (diff < 60000) return '刚刚';
     if (diff < 3600000) return Math.floor(diff / 60000) + ' 分钟前';
     if (diff < 86400000) return Math.floor(diff / 3600000) + ' 小时前';
@@ -432,6 +442,7 @@ window.U = (function () {
   return {
     $: $, $$: $$, esc: esc, el: el, icon: icon,
     pad: pad, fmtClock: fmtClock, fmtDateTime: fmtDateTime, dayLabel: dayLabel,
+    noteTimeLabel: noteTimeLabel,
     startOfDay: startOfDay, relTime: relTime, fmtDur: fmtDur,
     debounce: debounce, throttle: throttle,
     toast: toast,
