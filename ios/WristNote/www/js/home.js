@@ -344,6 +344,7 @@ window.Home = (function () {
       icon: 'folder', label: '未分类', check: !n.catId, onTap: function () {
         Store.setCategory(noteId, 0);
         render();
+        if (window.Editor && Editor.currentNoteId && Editor.currentNoteId() === noteId) Editor.renderMeta();
       }
     }];
     Store.categories().forEach(function (c) {
@@ -351,6 +352,7 @@ window.Home = (function () {
         icon: 'folder', label: c.name, check: n.catId === c.id, onTap: function () {
           Store.setCategory(noteId, c.id);
           render();
+          if (window.Editor && Editor.currentNoteId && Editor.currentNoteId() === noteId) Editor.renderMeta();
           U.toast('已移动到「' + c.name + '」');
         }
       });
@@ -370,6 +372,7 @@ window.Home = (function () {
           Store.setCategory(noteId, c.id);
           Store.flush();
           render();
+          if (window.Editor && Editor.currentNoteId && Editor.currentNoteId() === noteId) Editor.renderMeta();
           U.toast('已移动到「' + c.name + '」');
         });
       }

@@ -125,13 +125,19 @@ window.App = (function () {
     }
     systemDark = !!info.dark;
     try {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)');
+      systemDark = mq.matches;
+      const onMq = function (e) { setSystemDark(e.matches); };
+      if (mq.addEventListener) mq.addEventListener('change', onMq);
+      else if (mq.addListener) mq.addListener(onMq);
+    } catch (e) { /* ignore */ }
+    try {
       await Store.init();
     } catch (e) {
       U.toast('数据读取失败：' + (e.message || e));
     }
 
     // 启动时的主题选择
-    if ((Store.settings().theme || 0) === 0) systemDark = !!info.dark;
     applyTheme();
 
     Home.init();
