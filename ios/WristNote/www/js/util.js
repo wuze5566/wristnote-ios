@@ -297,6 +297,7 @@ window.U = (function () {
       sx = p.clientX; sy = p.clientY;
       clearTimeout(timer);
       timer = setTimeout(function () {
+        if (fired) return;
         fired = true;
         suppressClickUntil = Date.now() + 700;
         haptic();

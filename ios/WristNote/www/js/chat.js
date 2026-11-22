@@ -1161,6 +1161,18 @@ window.Chat = (function () {
     });
 
     start().catch(function (e) { U.toast(e.message || '录音失败，请检查麦克风'); });
+
+    // 点遮罩关掉面板时，别让麦克风一直录下去
+    const mask = document.getElementById('mask');
+    mask.addEventListener('click', function () {
+      if (!editorRecording) return;
+      const rec = editorRecording;
+      editorRecording = null;
+      clearInterval(rec.timer);
+      clearInterval(rec.meter);
+      if (rec.active) { Native.call('audio.cancel', {}).catch(function () {}); }
+      if (rec.path) { Native.call('fs', { op: 'delete', path: rec.path }).catch(function () {}); }
+    }, { once: true });
   }
 
   function renderAttachBar() {
