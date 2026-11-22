@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>备忘录</title>
+<style>
+  :root { --fg:#1E1E1E; --accent:#2E7CF6; --line:#EDEFF2; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html,body { margin:0; height:100%; background:#FFFFFF; color:var(--fg);
+    font: 15px -apple-system, "PingFang SC", sans-serif; }
+  .wrap { padding: calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 20px); }
+  h1 { font-size: 26px; margin: 8px 0 4px; letter-spacing: .5px; }
+  .sub { color:#8A8F98; font-size:12px; margin-bottom:16px; }
+  .card { background:#F7F8FA; border-radius:14px; padding:14px; margin-bottom:12px; }
+  .row { display:flex; gap:10px; margin-top:10px; }
+  button { flex:1; border:0; border-radius:12px; padding:12px; font-size:14px;
+    background:var(--accent); color:#fff; font-weight:600; }
+  button.ghost { background:#EAF1FE; color:var(--accent); }
+  pre { font-size:11px; white-space:pre-wrap; word-break:break-all; margin:8px 0 0;
+    color:#4A4F57; max-height:180px; overflow:auto; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>备忘录</h1>
+  <div class="sub" id="env">正在检测原生环境…</div>
+
+  <div class="card">
+    <b>原生桥自检</b>
+    <div class="row">
+      <button class="ghost" id="tInfo">信息</button>
+      <button class="ghost" id="tFs">存储</button>
+      <button class="ghost" id="tHttp">网络</button>
+    </div>
+    <div class="row">
+      <button class="ghost" id="tRec">录音</button>
+      <button class="ghost" id="tPhoto">相册</button>
+    </div>
+    <pre id="log">-</pre>
+  </div>
+</div>
+
+<script src="native.js"></script>
+<script>
+  const logEl = document.getElementById('log');
+  const lines = [];
+  function log(s) { lines.push(s); logEl.textContent = lines.slice(-14).join('\n'); }
+
+  Native.call('info', {}).then(function (i) {
+    document.getElementById('env').textContent =
+      'v' + i.version + ' · iOS ' + i.ios + ' · ' + Math.round(i.width) + '×' + Math.round(i.height) +
+      ' @' + i.scale + 'x · ' + (Native.hasNative ? '原生' : '浏览器 mock');
+    log('info ok');
+  }).catch(function (e) { log('info 失败: ' + e.message); });
+
+  document.getElementById('tInfo').onclick = function () {
+    Native.call('info', {}).then(function (i) { log('info: ' + JSON.stringify(i)); });
+  };
+  document.getElementById('tFs').onclick = function () {
+    const text = 'hello ' + new Date().toISOString();
+    Native.call('fs', { op: 'write', path: 'selftest.txt', text: text })
+      .then(function () { return Native.call('fs', { op: 'read', path: 'selftest.txt' }); })
+      .then(function (r) { log('存储: ' + (r.text === text ? '读写正常' : '内容不一致')); })
+      .catch(function (e) { log('存储失败: ' + e.message); });
+  };
+  document.getElementById('tHttp').onclick = function () {
+    Native.call('http', { url: 'https://api.deepseek.com/models', method: 'GET' })
+      .then(function (r) { log('网络: status ' + r.status + ' (无 key 时 401 属正常)'); })
+      .catch(function (e) { log('网络失败: ' + e.message); });
+  };
+  let recording = false;
+  document.getElementById('tRec').onclick = function () {
+    if (!recording) {
+      Native.call('audio.start', { path: 'audio/selftest.wav' })
+        .then(function () { recording = true; log('开始录音，3 秒后点播放区…'); })
+        .catch(function (e) { log('录音失败: ' + e.message); });
+    } else {
+      Native.call('audio.stop', {})
+        .then(function (r) {
+          recording = false;
+          log('录音完成 ' + r.ms + 'ms, ' + Math.round((r.size || 0) / 1024) + 'KB');
+          const a = new Audio('data:' + (r.mime || 'audio/wav') + ';base64,' + r.base64);
+          a.play().catch(function () {});
+        })
+        .catch(function (e) { log('停止失败: ' + e.message); });
+    }
+  };
+  document.getElementById('tPhoto').onclick = function () {
+    Native.call('photo.pick', {})
+      .then(function (r) { log('相册: ' + r.path + ' ' + r.w + '×' + r.h); })
+      .catch(function (e) { log('相册: ' + e.message); });
+  };
+</script>
+</body>
+</html>
