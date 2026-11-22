@@ -29,7 +29,10 @@ window.Chat = (function () {
     $('#chMode').addEventListener('click', pickMode);
     $('#chModel').addEventListener('click', pickModel);
     $('#chEffort').addEventListener('click', pickEffort);
-    $('#chBalance').addEventListener('click', function () { refreshBalance(true); });
+    $('#chBalance').addEventListener('click', function () {
+      if (!Api.hasKey()) { App.reset('setup'); return; }
+      refreshBalance(true);
+    });
     $('#chSend').addEventListener('click', onSendTap);
     $('#chAttach').addEventListener('click', showAttachSheet);
     $('#chDrawerClose').addEventListener('click', closeDrawer);
@@ -324,7 +327,7 @@ window.Chat = (function () {
     const text = (input.value || '').trim();
     const atts = state.pendingAtts.slice();
     if (!text && !atts.length) return;
-    if (!Api.hasKey()) { U.toast('还没有填 API Key（设置里填一下）'); return; }
+    if (!Api.hasKey()) { U.toast('先填一下 API Key'); App.reset('setup'); return; }
     if (!state.chat) await ensureChat();
 
     state.chat.messages.push({ role: 'user', text: text, at: Date.now(), atts: atts });
@@ -558,8 +561,12 @@ window.Chat = (function () {
   }
 
   function renderBalance() {
+    if (!Api.hasKey()) {
+      $('#chBalance').textContent = '设置 API Key';
+      return;
+    }
     const v = Store.settings().lastBalance;
-    $('#chBalance').textContent = v ? ('余额 ' + v) : (Api.hasKey() ? '余额 —' : '余额 未设置 Key');
+    $('#chBalance').textContent = v ? ('余额 ' + v) : '余额 —';
   }
 
   async function loadModelInfo() {

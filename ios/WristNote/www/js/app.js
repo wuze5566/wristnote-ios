@@ -1,6 +1,6 @@
 /* 应用入口：对话为首屏，设置是二级页 */
 window.App = (function () {
-  const VIEWS = { chat: 'v-chat', settings: 'v-settings' };
+  const VIEWS = { setup: 'v-setup', chat: 'v-chat', settings: 'v-settings' };
 
   let stack = [];
   let info = { version: '1.0.0', ios: '', dark: false };
@@ -114,7 +114,8 @@ window.App = (function () {
     applyTheme();
     Settings.init();
     Chat.init();
-    reset('chat');
+    bindSetup();
+    reset((Store.settings().apiKey || '').trim() ? 'chat' : 'setup');
 
     Store.log('启动 v' + info.version + ' iOS ' + info.ios + ' ' + (info.model || '') +
       ' ' + info.width + 'x' + info.height + '@' + info.scale);
@@ -129,6 +130,23 @@ window.App = (function () {
     });
     window.addEventListener('pagehide', function () { Store.flush(); });
     setInterval(function () { Store.flush(); }, 8000);
+  }
+
+  function bindSetup() {
+    const input = document.getElementById('setupKey');
+    document.getElementById('setupSave').addEventListener('click', function () {
+      const v = (input.value || '').trim();
+      if (!v) { U.toast('请先填 API Key'); input.focus(); return; }
+      Store.setSetting('apiKey', v);
+      Store.flush();
+      input.blur();
+      U.toast('已保存');
+      reset('chat');
+    });
+    document.getElementById('setupSkip').addEventListener('click', function () {
+      input.blur();
+      reset('chat');
+    });
   }
 
   function versionText() {

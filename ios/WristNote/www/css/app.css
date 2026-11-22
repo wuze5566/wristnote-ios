@@ -152,6 +152,30 @@ img { -webkit-user-drag: none; }
 .pill-ghost:active { background: var(--card-press); }
 .pill.small { height: 28px; font-size: 13px; padding: 0 12px; border-radius: 14px; }
 
+/* ============================== 首次引导 ============================== */
+
+.setup-wrap {
+  flex: 1; display: flex; flex-direction: column; justify-content: center;
+  padding: 0 26px calc(48px + var(--safe-bottom)); gap: 12px;
+}
+.setup-logo {
+  width: 64px; height: 64px; border-radius: 20px; background: var(--accent-soft);
+  color: var(--accent); display: grid; place-items: center; margin-bottom: 8px;
+}
+.setup-logo .ico { width: 32px; height: 32px; }
+.setup-title { margin: 0; font-size: 27px; font-weight: 700; letter-spacing: -.4px; }
+.setup-sub { margin: 0 0 10px; font-size: 15px; color: var(--sub); }
+.setup-input {
+  height: 52px; border-radius: 14px; background: var(--field); padding: 0 16px;
+  font-size: 16px; font-family: var(--mono); width: 100%;
+}
+.setup-btn {
+  height: 50px; border-radius: 14px; background: var(--accent); color: #fff;
+  font-size: 17px; font-weight: 600; margin-top: 6px; width: 100%;
+}
+.setup-btn:active { opacity: .86; }
+.setup-skip { height: 44px; color: var(--sub); font-size: 15px; width: 100%; }
+
 /* ============================== 首页 ============================== */
 
 .home-hdr { flex: none; padding: calc(var(--safe-top) + 6px) 16px 0; background: var(--bg); }
