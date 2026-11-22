@@ -15,7 +15,7 @@
 
 ### 对话
 
-- 流式输出（SSE），边生成边显示
+- 一次性请求 /chat/completions（和安卓端一致，最稳），等待时显示思考中
 - 思考过程折叠：回复上方 `▸ 思考过程`，展开看 `reasoning_content`
 - Markdown 渲染：标题、列表、表格、代码块、行内代码、粗体/斜体/删除线、引用、链接只留文字、LaTeX 括号还原
 - 推理强度：`off / low / high / max`；off 只发 `thinking:disabled`，不发 `reasoning_effort`
@@ -51,7 +51,7 @@
 | 层 | 说明 |
 | --- | --- |
 | `ios/WristNote/*.swift` | WKWebView 壳、安全区/键盘、原生桥、录音、相册、文件、SSE 流式 HTTP、日志 |
-| `ios/WristNote/www/` | 界面与业务：HTML/CSS/JS（对话、抽屉、设置、Markdown） |
+| `ios/WristNote/www/` | 界面与业务：HTML/CSS/JS（对话、抽屉、设置、Markdown、首次填 Key） |
 | `build.sh` | `swiftc` 编 arm64，拼 `.app`，打包成 IPA |
 | `.github/workflows/ipa.yml` | macOS runner 自动构建并上传 IPA |
 

@@ -140,8 +140,13 @@ window.App = (function () {
       Store.setSetting('apiKey', v);
       Store.flush();
       input.blur();
-      U.toast('已保存');
       reset('chat');
+      U.toast('已保存，正在验证…');
+      Api.models().then(function (list) {
+        U.toast('连接正常 · ' + list.length + ' 个模型');
+      }).catch(function (e) {
+        U.toast('连接失败：' + (e.message || ''));
+      });
     });
     document.getElementById('setupSkip').addEventListener('click', function () {
       input.blur();

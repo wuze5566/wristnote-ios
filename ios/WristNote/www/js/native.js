@@ -264,7 +264,19 @@ window.Native = (function () {
             return;
           }
           if (/\/chat\/completions/.test(p.url)) {
-            resolve({ status: 200, body: '{}' });
+            resolve({
+              status: 200,
+              body: JSON.stringify({
+                choices: [{
+                  message: { content: MOCK_REPLY, reasoning_content: '先把问题拆成几块，再给结论。' },
+                  finish_reason: 'stop'
+                }],
+                usage: {
+                  prompt_tokens: 8200, completion_tokens: 420,
+                  prompt_cache_hit_tokens: 6100, prompt_cache_miss_tokens: 2100
+                }
+              })
+            });
             return;
           }
           fetch(p.url, {

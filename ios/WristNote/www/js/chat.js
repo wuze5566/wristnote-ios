@@ -437,7 +437,7 @@ window.Chat = (function () {
         else if (m.role === 'ai' && !m.error) messages.push({ role: 'assistant', content: m.text || '' });
       }
 
-      const res = await streamOnce(messages);
+      const res = await callOnce(messages);
       const msg = state.chat.messages[pendingIndex];
       if (!msg) return;
       msg.pending = false;
@@ -479,38 +479,10 @@ window.Chat = (function () {
     }
   }
 
-  function streamOnce(messages) {
-    return new Promise(function (resolve, reject) {
-      let content = '';
-      let reasoning = '';
-      const paint = U.throttle(function () {
-        const bubble = document.querySelector('.msg.ai[data-i="' + state.pendingIndex + '"] .bubble');
-        if (!bubble) return;
-        bubble.dataset.streaming = '1';
-        bubble.className = 'bubble md';
-        bubble.innerHTML = content ? Md.render(content) : '<span class="typing"><i></i><i></i><i></i></span>';
-      }, 60);
-
-      const h = Api.chat({
-        messages: messages,
-        onDelta: function (t) {
-          content += t;
-          const near = U.isNearBottom($('#chList'), 160);
-          paint();
-          if (near) U.scrollToBottom($('#chList'));
-        },
-        onReasoning: function (t) {
-          reasoning += t;
-          const bubble = document.querySelector('.msg.ai[data-i="' + state.pendingIndex + '"] .bubble');
-          if (bubble && !content) {
-            bubble.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>' +
-              '<span style="color:var(--hint);font-size:12px;margin-left:6px">思考中</span>';
-          }
-        }
-      });
-      state.cancel = function () { h.cancel(); };
-      h.done.then(resolve).catch(reject);
-    });
+  async function callOnce(messages) {
+    state.cancel = null;
+    const res = await Api.chatBlocking({ messages: messages });
+    return res;
   }
 
   /* --------------------------------- 上下文 / 余额 --------------------------------- */

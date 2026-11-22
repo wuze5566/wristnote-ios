@@ -128,6 +128,17 @@ window.Settings = (function () {
         }
       }),
       makeRow({
+        title: '测试连接', value: '点一下验证 Key', icon: 'check', onTap: function () {
+          if (!Api.hasKey()) { U.toast('还没有填 API Key'); return; }
+          U.toast('测试中…');
+          Api.models().then(function (list) {
+            U.toast('连接正常 · ' + list.length + ' 个模型');
+          }).catch(function (e) {
+            U.toast('连接失败：' + (e.message || ''));
+          });
+        }
+      }),
+      makeRow({
         title: '接口地址', value: s.apiBase, icon: 'doc', onTap: function () {
           U.prompt({
             title: '接口地址', value: s.apiBase, placeholder: 'https://api.deepseek.com',

@@ -168,6 +168,46 @@ window.Api = (function () {
     return { done: done, cancel: stream.cancel };
   }
 
+  /**
+   * 非流式对话（和安卓 ChatAgent 一样一次性拿完整结果，最稳）
+   */
+  async function chatBlocking(opts) {
+    if (!hasKey()) throw new Error('还没有填 API Key');
+    const model = opts.model || s().chatModel || 'deepseek-flash';
+    const effort = opts.effort || s().chatEffort || 'high';
+    const body = { model: model, messages: opts.messages, stream: false };
+    if (effort === 'off') {
+      body.thinking = { type: 'disabled' };
+    } else {
+      body.thinking = { type: 'enabled' };
+      body.reasoning_effort = effort;
+    }
+    if (opts.tools && opts.tools.length) {
+      body.tools = opts.tools;
+      body.tool_choice = 'auto';
+    }
+    const r = await Native.call('http', {
+      url: base() + '/chat/completions',
+      method: 'POST',
+      headers: headers({ 'Content-Type': 'application/json; charset=utf-8' }),
+      body: JSON.stringify(body),
+      timeout: 600
+    });
+    if (r.status < 200 || r.status >= 300) throw new Error(errorText(r.status, r.body));
+    let j;
+    try { j = JSON.parse(r.body); } catch (e) { throw new Error('返回格式不对：' + String(r.body || '').slice(0, 120)); }
+    if (j.error) throw new Error((j.error && (j.error.message || j.error.code)) || '接口返回错误');
+    const choice = (j.choices || [])[0] || {};
+    const msg = choice.message || {};
+    return {
+      content: msg.content || '',
+      reasoning: msg.reasoning_content || msg.reasoning || '',
+      toolCalls: msg.tool_calls || [],
+      usage: j.usage || null,
+      finishReason: choice.finish_reason || ''
+    };
+  }
+
   /* --------------------------------- 余额 --------------------------------- */
 
   async function balance() {
@@ -273,7 +313,7 @@ window.Api = (function () {
   return {
     base: base, key: key, hasKey: hasKey, headers: headers,
     request: request, errorText: errorText,
-    chat: chat, balance: balance, models: models, contextWindow: contextWindow,
+    chat: chat, chatBlocking: chatBlocking, balance: balance, models: models, contextWindow: contextWindow,
     cacheModelInfo: cacheModelInfo, uploadFile: uploadFile, asr: asr
   };
 })();
